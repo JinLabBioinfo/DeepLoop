@@ -1,0 +1,13 @@
+numpy
+scipy
+pandas
+flask
+gevent
+pillow
+requests
+matplotlib
+werkzeug
+opencv-python
+keras==2.2.4
+tensorflow-gpu==1.5.0
+
