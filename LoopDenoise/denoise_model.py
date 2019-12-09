@@ -456,8 +456,8 @@ class DenoiseModel(Autoencoder):
         ax.set_ylabel('dB', fontsize=6)
         plt.title('PSNR', size=6)
         ax.plot(self.psnr_plot, label='train', linewidth=0.2)
-        #if validate:
-            #ax.plot(val_psnr, label='test', linewidth=0.2)
+        if validate:
+            ax.plot(self.val_psnr, label='test', linewidth=0.2)
         ax.legend(loc='best', prop={'size': 4})
 
         if target is not None:
