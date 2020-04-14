@@ -1,4 +1,4 @@
-# prepossessing
+# Preprocessing
 Here we take part of GM12878 cell HiC data(GSM1181867) as an example to show the prepossessing, HiCorr, DeepLoop steps.
 Before you start, you need to initialize some variables:
 "hg19_fa", path to bowtie, path to bowtieindex, "lib" and "ref"
@@ -69,8 +69,12 @@ $lib/merge_sorted_frag_loop.pl frag_loop.SRR927086.samestrand $dir/frag_loop.SRR
 # Merging all the "loop.trans" in the current directory
 $lib/merge_sorted_frag_loop.pl `ls *.loop.trans` > frag_loop.SRR927086.trans
 ```
-## Step3: Run HiCorr for bias-correction
+
+# HiCorr Bias-Correction
+## Step 1: Run HiCorr for bias-correction
 HiCorr needs cis frag loop and trans frag loop as input, the "temp.by.chrom" directory in the output will be used for the DeepLoop step
 
-## Step4: Run LoopDenoise or LoopEnhance for the bias-corrected anchor loops
+# Run LoopDenoise or LoopEnhance
+
+## Step 1: Run LoopDenoise or LoopEnhance for the bias-corrected anchor loops
 ./run_enhance.sh <path_to_temp.by.chrom>
