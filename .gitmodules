@@ -1,0 +1,3 @@
+[submodule "HiCorr"]
+	path = HiCorr
+	url = https://github.com/JinLabBioinfo/HiCorr.git
