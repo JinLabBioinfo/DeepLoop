@@ -69,11 +69,11 @@ $lib/merge_sorted_frag_loop.pl frag_loop.SRR927086.samestrand $dir/frag_loop.SRR
 # Merging all the "loop.trans" in the current directory
 $lib/merge_sorted_frag_loop.pl `ls *.loop.trans` > frag_loop.SRR927086.trans
 ```
-
 # HiCorr Bias-Correction
-## Step 1: Run HiCorr for bias-correction
-HiCorr needs cis frag loop and trans frag loop as input, the "temp.by.chrom" directory in the output will be used for the DeepLoop step
-
+HiCorr(https://github.com/JinLabBioinfo/HiCorr) needs cis frag loop and trans frag loop as input, the "temp.by.chrom" directory in the output will be used for the DeepLoop step
+```
+./HiCorr HindIII <cis_loop_file> <trans_loop_file> <name_of_your_data> <hg19> 
+```
 # Run LoopDenoise or LoopEnhance
 
 ## Step 1: Run LoopDenoise or LoopEnhance for the bias-corrected anchor loops
