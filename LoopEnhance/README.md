@@ -6,6 +6,6 @@
 
 ## data representation
 <p align="center">
-<img align="center" src="https://github.com/JinLabBioinfo/DeepLoop/blob/master/images/data_representation.png" width="450" height="400">
+<img align="center" src="https://github.com/JinLabBioinfo/DeepLoop/blob/master/images/data_representation.png" width="400" height="400">
 </p>
 
