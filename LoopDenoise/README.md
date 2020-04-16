@@ -37,3 +37,5 @@ hi_c_denoise.py <path to replicate anchor_to_anchor files> <path to combined anc
 You can optionally pass in additional `<path to validation replicate anchor_to_anchor files>` and `<path to validation combined anchor_to_anchor targets>`.
 
 The script will automatically create a set of new directories storing your model experiments based on the name passed to the `<experiment name>` parameter.
+
+Make sure you use a GPU for training, otherwise it will take far too long to fully train a model.

@@ -28,6 +28,8 @@ The packages can be installed by running the following command:
 
 `pip3 install -r requirements.txt`
 
+If you plan on training your own model you will want to use a GPU enabled version of TensorFlow to avoid long training times.  We used `tensorflow-gpu==1.5.0` and `keras==2.2.4`.  For prediction GPU is not necessary but it will be faster than using CPU.
+
 # DeepLoop Usage
 A detail example for HiC data prepossessing (downloading, mapping, filtering and HiCorr bias correction) is in https://github.com/JinLabBioinfo/DeepLoop/blob/master/preprocessing/
 
