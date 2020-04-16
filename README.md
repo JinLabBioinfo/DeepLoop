@@ -2,10 +2,10 @@
 The conceptual innovation of DeepLoop is to handle systematic biases and random noises separately: we used HiCorr to improve the rigor of bias correction, and then applied deep-learning techniques for noise reduction and loop signal enhancement. DeepLoop significantly improves the sensitivity, robustness, and quantitation of Hi-C loop analyses, and can be used to reanalyze most published low-depth Hi-C datasets. Remarkably, DeepLoop can identify chromatin loops with Hi-C data from a few dozen single cells
 
 ## LoopDenoise removes noise from HiCorr bias-corrected HiC data
-<img src="https://github.com/JinLabBioinfo/DeepLoop/blob/master/images/LoopDenoise.example.PNG" width="600" height="400" align="middle"/>
+<img align="center" src="https://github.com/JinLabBioinfo/DeepLoop/blob/master/images/LoopDenoise.example.PNG" width="600" height="400">
 
 ## LoopEnhance reveals chromatin loops from a few dozens of single cell HiC data
-<img src="https://github.com/JinLabBioinfo/DeepLoop/blob/master/images/LoopEnhance_examples_sc.PNG" width="600" height="250" align="middle"/>
+<img align="center" src="https://github.com/JinLabBioinfo/DeepLoop/blob/master/images/LoopEnhance_examples_sc.PNG" width="600" height="250">
 
 # Run LoopDenoise or LoopEnhance
 ```
