@@ -20,7 +20,7 @@ The conceptual innovation of DeepLoop is to handle systematic biases and random 
 A detail example for HiC data prepossessing (downloading, mapping, filtering and HiCorr bias correction) is in https://github.com/JinLabBioinfo/DeepLoop/blob/master/preprocessing/
 
 The "temp_by_chrom" directory in the output of HiCorr bias correction contains loop anchor pairs with raw reads and expected reads. 
-The format is <loop_anchor1> <loop_anchor2> <raw_reads> <expected reads>. 
+The format is <loop_anchor1> <loop_anchor2> <raw_reads> <expected reads>  
 The script "run_prediction.sh" will check the cis-2M reads for input bias-corrected directory(temp_by_chrom). The LoopDenoise will be applied when the cis-2M reads is over than 250M. The LoopEnhance will be applied when the depth is lower than 250M, the LoopEnhance model trained by similar depth will be chosen.
 ```
 ./run_prediction.sh <anchor_bed_dir> <path to models> <path to anchor_to_anchor files> <output path>
