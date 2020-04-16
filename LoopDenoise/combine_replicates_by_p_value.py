@@ -4,7 +4,7 @@ import argparse
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-from utils import draw_heatmap, anchor_to_locus, anchor_list_to_dict, chromosome_labels, sorted_nicely, get_chromosome_from_filename
+from utils.utils import draw_heatmap, anchor_to_locus, anchor_list_to_dict, chromosome_labels, sorted_nicely, get_chromosome_from_filename
 import scipy.sparse
 
 parser = argparse.ArgumentParser(description='Combine replicates by p-value')
@@ -208,8 +208,3 @@ for chr_anchor_file in os.listdir(full_data_file):
                                                 shape=(matrix_size, matrix_size))
 
         plot_p_value_heatmaps(anchor_to_anchor_file_list, sparse_matrix, anchor_dict, matrix_size, chr_file, anchor_min, anchor_max)
-
-
-
-
-

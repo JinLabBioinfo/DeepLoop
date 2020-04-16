@@ -7,9 +7,9 @@ from keras.optimizers import Adam
 from keras.models import model_from_json
 import numpy as np
 import matplotlib.pyplot as plt
-from cnn_architectures import Autoencoder
-from utils import generate_batches_from_chr, save_samples, draw_heatmap, get_model_memory_usage
-from utils import save_images_to_video, normalize_matrix, denormalize_matrix
+from utils.cnn_architectures import Autoencoder
+from utils.utils import generate_batches_from_chr, save_samples, draw_heatmap, get_model_memory_usage
+from utils.utils import save_images_to_video, normalize_matrix, denormalize_matrix
 
 
 class DenoiseModel(Autoencoder):
