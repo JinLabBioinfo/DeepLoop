@@ -1,7 +1,7 @@
 # LoopEnhance training
 ## LoopEnhance model
 <p align="center">
-<img align="center" src="https://github.com/JinLabBioinfo/DeepLoop/blob/master/images/LoopEnhance_model.PNG" width="900" height="180">
+<img align="center" src="https://github.com/JinLabBioinfo/DeepLoop/blob/master/images/LoopEnhance_model.PNG" width="900" height="160">
 </p>
 
 ## data representation
