@@ -4,8 +4,8 @@ import pandas as pd
 import numpy as np
 import time
 from keras.models import model_from_json
-from scipy.sparse import coo_matrix, csr_matrix, triu
-from utils import load_chr_ratio_matrix_from_sparse, anchor_to_locus, anchor_list_to_dict
+from scipy.sparse import csr_matrix, triu
+from utils.utils import anchor_to_locus, anchor_list_to_dict
 
 
 def locus_to_anchor(anchor_list):

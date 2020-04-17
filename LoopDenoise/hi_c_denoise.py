@@ -1,5 +1,5 @@
 import sys
-from denoise_model import DenoiseModel
+from LoopDenoise.denoise_model import DenoiseModel
 import numpy as np
 
 if __name__ == '__main__':

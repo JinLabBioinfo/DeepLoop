@@ -1,6 +1,6 @@
 import sys
 import numpy as np
-from enhance_model import EnhanceModel
+from LoopEnhance.enhance_model import EnhanceModel
 
 np.random.seed(42)  # set random seed for reproducible research
 
@@ -18,7 +18,7 @@ if __name__ == '__main__':
     enhance = EnhanceModel(matrix_size=128,
                            step_size=128,
                            batch_size=4,
-                           epochs=100,
+                           epochs=50,
                            steps_per_checkpoint=50,
                            steps_per_model_checkpoint=1,
                            start_filters=4,
