@@ -5,21 +5,19 @@ import time
 import random
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 from collections import deque
-from tensorflow import keras
-from sklearn.preprocessing import LabelEncoder
 from scipy.sparse import csr_matrix, save_npz, load_npz
 from tqdm import tqdm
 from utils import load_chr_ratio_matrix_from_sparse, sorted_nicely, get_chromosome_from_filename
 
 
 class DataGenerator():
-    def __init__(self, data_dir, anchor_dir, matrix_size, step_size, limit_2Mb=384, batch_size=32, shuffle=True, diagonal_only=False, categorical=False, test=False, max_depth=None):
+    def __init__(self, data_dir, target_dir, anchor_dir, matrix_size, step_size, limit_2Mb=384, batch_size=16, matrices_per_depth=1, batches_per_chr=128, shuffle=True, diagonal_only=True):
         self.data_dir = data_dir
+        self.target_dir = target_dir
         self.depth_dirs = os.listdir(self.data_dir)
         self.read_depths = []
-        self.read_depth_labels = np.array(self.depth_dirs.copy())
+        self.read_depth_labels = self.depth_dirs.copy()
         for d in self.depth_dirs:
             if d.endswith('k'):  # thousands of reads
                 self.read_depths.append(float(d[:-1]) * 1000)
@@ -27,30 +25,8 @@ class DataGenerator():
                 self.read_depths.append(float(d[:-1]) * 1000000)
             else:
                 assert 'Did not recognize read depth from directory name %s' % d
-            print(d, self.read_depths[-1])
         self.read_depths = np.log(self.read_depths)
-        if max_depth is not None:  # remove any datasets with too many reads for testing
-            #self.read_depths = np.array(self.read_depths)[sorted_indices]
-            depth_mask = np.array(self.read_depths) < math.log(max_depth)
-            self.read_depths = self.read_depths[depth_mask]
-            self.read_depth_labels = self.read_depth_labels[depth_mask]
-            self.depth_dirs = np.array(self.depth_dirs)[depth_mask]
-        sorted_indices = np.argsort(self.read_depths)
-        self.read_depths = self.read_depths[sorted_indices]
-        self.read_depth_labels = self.read_depth_labels[sorted_indices]
-        self.depth_dirs = np.array(self.depth_dirs)[sorted_indices]
-        #plt.scatter(np.arange(0, len(self.read_depths)), np.sort(self.read_depths))
-        #plt.show()
-        if categorical:
-            # encode class values as integers
-            encoder = LabelEncoder()
-            encoder.fit(self.read_depth_labels)
-            encoded_Y = encoder.transform(self.read_depth_labels)
-            # convert integers to dummy variables (i.e. one hot encoded)
-            self.read_depths = keras.utils.to_categorical(encoded_Y)
-        print(self.read_depths)
-        #self.max_depth = np.max(self.read_depths)
-        #self.read_depths = self.read_depths / self.max_depth   # normalize to 0-1
+        #self.read_depths = self.read_depths / np.max(self.read_depths)   # normalize to 0-1
         #self.read_depths = (np.array(self.read_depths) - np.mean(self.read_depths)) / np.std(self.read_depths)
         self.depth_dirs = [os.path.join(self.data_dir, d) for d in self.depth_dirs]  # make depth path absolute
         self.anchor_dir = anchor_dir
@@ -63,8 +39,9 @@ class DataGenerator():
         self.limit_2Mb = limit_2Mb
         self.input_shape = (self.matrix_size, self.matrix_size, 1)
         self.batch_size = batch_size
+        self.matrices_per_depth = matrices_per_depth
+        self.batches_per_chr = batches_per_chr
         self.diagonal_only = diagonal_only
-        self.test = test
         self.chr_names = sorted_nicely(list(self.chr_lengths.keys()))
         print(self.chr_names)
         self.anchors = pd.DataFrame()
@@ -73,13 +50,6 @@ class DataGenerator():
             self.chr_starts[chr_name] = genome_length
             genome_length += len(self.anchor_lists[chr_name])
             self.anchors = pd.concat([self.anchors, self.anchor_lists[chr_name]])
-
-        n_genomes = 0
-        for d in self.depth_dirs:
-            n_genomes += len(os.listdir(d))
-        matrices_per_genome = genome_length / self.step_size
-        self.steps_per_epoch = int(matrices_per_genome * n_genomes / self.batch_size)
-        print('%d batches per epoch' % self.steps_per_epoch)
 
     @staticmethod
     def get_chromosome_file(dir_name, chr_name):
@@ -121,9 +91,11 @@ class DataGenerator():
         chr_choices = {}  # stores a queue for each depth dir containing the remaining chromosomes to choose from
         while True:
             x_batch = []
+            y_batch = []
             depth_batch = []
             n_batches = 0
             for chromosome in self.chr_lengths.keys():
+                print(chromosome)
                 if chromosome in anchor_lists.keys():
                     anchor_list = anchor_lists[chromosome]
                 else:
@@ -131,6 +103,8 @@ class DataGenerator():
                     anchor_lists[chromosome] = anchor_list
                 for row_i in range(0, self.chr_lengths[chromosome] - self.matrix_size, self.step_size):
                     for col_i in range(row_i, self.chr_lengths[chromosome] - self.matrix_size, self.step_size):
+                        if self.diagonal_only and row_i != col_i:  # only extract symmetric submatrices from diagonal
+                            continue
                         if abs(row_i - col_i) > self.limit_2Mb:  # max distance from diagonal with actual values
                             continue
                         for depth_dir, read_depth in zip(self.depth_dirs, self.read_depths):
@@ -141,10 +115,7 @@ class DataGenerator():
                                     rep_choices[depth_dir] = deque()
                                     for rep in os.listdir(depth_dir):
                                         if 'summary' not in rep:
-                                            if 'rep1' not in rep and self.test:  # test on rep1
-                                                continue
-                                            else:
-                                                rep_choices[depth_dir].append(os.path.join(depth_dir, rep))
+                                            rep_choices[depth_dir].append(os.path.join(depth_dir, rep))
                                 rep_dir = rep_choices[depth_dir].popleft()
 
                                 chr_file = self.get_chromosome_file(rep_dir, chromosome)
@@ -152,28 +123,40 @@ class DataGenerator():
                                     sparse_matrix = load_chr_ratio_matrix_from_sparse(rep_dir, chr_file,
                                                                                       anchor_dir=self.anchor_dir,
                                                                                       anchor_list=anchor_list,
-                                                                                      chr_name=chromosome,
-                                                                                      use_raw=True)
+                                                                                      chr_name=chromosome)
                                 except ValueError:
                                     print(rep_dir, chr_file)
                                     continue
                                 current_chromosomes[depth_dir] = sparse_matrix
 
+                            if chromosome not in target_chromosomes.keys():
+                                target_file = self.get_chromosome_file(self.target_dir, chromosome)
+                                target_matrix = load_chr_ratio_matrix_from_sparse(self.target_dir, target_file,
+                                                                                  anchor_dir=self.anchor_dir,
+                                                                                  anchor_list=anchor_list,
+                                                                                  chr_name=chromosome)
+                                target_chromosomes[chromosome] = target_matrix
+                            else:
+                                target_matrix = target_chromosomes[chromosome]
 
                             rows = slice(row_i, row_i + self.matrix_size)
                             cols = slice(col_i, col_i + self.matrix_size)
                             tile = sparse_matrix[rows, cols].A
-                            if not self.diagonal_only and random.random() > 0.5:  # flip a coin
+                            if random.random() > 0.5:  # flip a coin
                                 tile = tile.T  # to flip the matrix
                             tile = np.expand_dims(tile, -1)
+
+                            target_tile = target_matrix[rows, cols].A
+                            target_tile = np.expand_dims(target_tile, -1)
+
                             x_batch.append(tile)
+                            y_batch.append(target_tile)
                             depth_batch.append(read_depth)
 
                             if len(x_batch) >= self.batch_size:
                                 n_batches += 1
-                                yield np.array(x_batch), np.array(depth_batch)
+                                yield np.array(x_batch), [np.array(y_batch), np.array(depth_batch)]
                                 x_batch = []
+                                y_batch = []
                                 depth_batch = []
-                        if self.diagonal_only:  # only extract symmetric submatrix from diagonal
-                            break
                 current_chromosomes = {}  # reset chromosome dict
