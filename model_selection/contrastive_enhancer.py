@@ -59,6 +59,7 @@ parser.add_argument('--filters', required=False, type=int, default=4)
 parser.add_argument('--n_epochs', required=False, type=int, default=20)
 parser.add_argument('--pretrain', required=False, type=bool, default=False)
 parser.add_argument('--base_model', required=False, type=str, default='enhance_CP_GZ_001_with_fake.h5')
+parser.add_argument('--sparse_dir', required=False, type=str, default='data')
 args = parser.parse_args()
 
 data_dir = args.data_dir
@@ -71,8 +72,9 @@ filters = args.filters
 n_epochs = args.n_epochs
 pretrain = args.pretrain
 base_model = args.base_model
+sparse_dir = args.sparse_dir
 
-data_generator = DataGenerator(data_dir, target_dir, anchor_dir, matrix_size, step_size)
+data_generator = DataGenerator(data_dir, target_dir, anchor_dir, matrix_size, step_size, sparse_dir=sparse_dir)
 print('Input shape:', data_generator.input_shape)
 
 univ_enhance = UniversalEnhancer(base_model)

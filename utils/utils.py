@@ -5,7 +5,7 @@ import cv2
 import random
 import pickle
 import numpy as np
-from keras import backend as K
+import tensorflow.keras.backend as K
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.colors
@@ -17,6 +17,7 @@ chromosome_labels = {'chr1': 0, 'chr2': 1, 'chr3': 2, 'chr4': 3, 'chr5': 4, 'chr
                      'chr10': 9, 'chr11': 10, 'chr12': 11, 'chr13': 12, 'chr14': 13, 'chr15': 14, 'chr16': 15, 'chr17': 16, 'chr18': 17,
                      'chr19': 18, 'chr20': 19, 'chr21': 20, 'chr22': 21, 'chrX': 22, 'chrY': 23}
 
+'''
 data_dir = 'data/'
 sparse_data_dir = 'data/sparse/'
 try:
@@ -27,6 +28,7 @@ try:
     os.mkdir(sparse_data_dir)
 except FileExistsError:
     pass
+'''
 
 
 def open_anchor_to_anchor(filename):
@@ -50,6 +52,7 @@ def open_anchor_to_anchor(filename):
                          names=['anchor1', 'anchor2', 'ratio'],
                          usecols=['anchor1', 'anchor2', 'ratio'])
     return df
+
 
 def open_full_genome(data_dir):
     '''
@@ -166,7 +169,7 @@ def save_samples(input_dir, target_dir, matrix_size, multi_input=False, dir_3=No
     np.save('%s%s_2' % (data_dir, name), tile_2)
 
 
-def load_chr_ratio_matrix_from_sparse(dir_name, file_name, anchor_dir, anchor_list=None, chr_name=None, dummy=5, ignore_sparse=False, force_symmetry=False):
+def load_chr_ratio_matrix_from_sparse(dir_name, file_name, anchor_dir, sparse_dir=None, anchor_list=None, chr_name=None, dummy=5, ignore_sparse=False, force_symmetry=False, use_raw=False):
     """
     Loads data as a sparse matrix by either reading a precompiled sparse matrix or an anchor to anchor file which is converted to sparse CSR format.
     Ratio values are computed using the observed (obs) and expected (exp) values:
@@ -189,10 +192,9 @@ def load_chr_ratio_matrix_from_sparse(dir_name, file_name, anchor_dir, anchor_li
     if chr_name is None:
         chr_name = get_chromosome_from_filename(file_name)
     sparse_rep_dir = dir_name[dir_name[: -1].rfind('/') + 1:]  # directory where the pre-compiled sparse matrices are saved
-    try:
-        os.mkdir(sparse_data_dir + sparse_rep_dir)
-    except FileExistsError:
-        pass
+    if sparse_dir is not None:
+        sparse_data_dir = sparse_dir
+    os.makedirs(sparse_data_dir + sparse_rep_dir, exist_ok=True)
     if file_name.endswith('.npz'):  # loading pre-combined and pre-compiled sparse data
         sparse_matrix = scipy.sparse.load_npz(dir_name + file_name)
     else:  # load from file name
@@ -201,18 +203,18 @@ def load_chr_ratio_matrix_from_sparse(dir_name, file_name, anchor_dir, anchor_li
         except FileExistsError:
             pass
         if file_name + '.npz' in os.listdir(sparse_data_dir + sparse_rep_dir) and not ignore_sparse:  # check if pre-compiled data already exists
-            sparse_matrix = scipy.sparse.load_npz(sparse_data_dir + sparse_rep_dir + file_name + '.npz')
+            sparse_matrix = scipy.sparse.load_npz(os.path.join(sparse_data_dir, sparse_rep_dir, file_name + '.npz'))
         else:  # otherwise generate sparse matrix from anchor2anchor file and save pre-compiled data
             if anchor_list is None:
                 if anchor_dir is None:
                     assert 'You must supply either an anchor reference list or the directory containing one'
-                anchor_list = pd.read_csv(anchor_dir + '%s.bed' % chr_name, sep='\t',
+                anchor_list = pd.read_csv(os.path.join(anchor_dir, '%s.bed' % chr_name), sep='\t',
                                           names=['chr', 'start', 'end', 'anchor'])  # read anchor list file
             matrix_size = len(anchor_list) # matrix size is needed to construct sparse CSR matrix
             anchor_dict = anchor_list_to_dict(anchor_list['anchor'].values)  # convert to anchor --> index dictionary
             try:  # first try reading anchor to anchor file as <a1> <a2> <obs> <exp>
                 chr_anchor_file = pd.read_csv(
-                    dir_name + file_name,
+                    os.path.join(dir_name, file_name),
                     delimiter='\t',
                     names=['anchor1', 'anchor2', 'obs', 'exp'],
                     usecols=['anchor1', 'anchor2', 'obs', 'exp'])  # read chromosome anchor to anchor file
@@ -222,18 +224,22 @@ def load_chr_ratio_matrix_from_sparse(dir_name, file_name, anchor_dir, anchor_li
                 sparse_matrix = scipy.sparse.csr_matrix((ratio, (rows, cols)), shape=(matrix_size, matrix_size))  # construct sparse CSR matrix
             except:  # otherwise read anchor to anchor file as <a1> <a2> <ratio>
                 chr_anchor_file = pd.read_csv(
-                    dir_name + file_name,
+                    os.path.join(dir_name, file_name),
                     delimiter='\t',
                     names=['anchor1', 'anchor2', 'ratio'],
                     usecols=['anchor1', 'anchor2', 'ratio'])
                 rows = np.vectorize(anchor_to_locus(anchor_dict))(chr_anchor_file['anchor1'].values)  # convert anchor names to row indices
                 cols = np.vectorize(anchor_to_locus(anchor_dict))(chr_anchor_file['anchor2'].values)  # convert anchor names to column indices
-                sparse_matrix = scipy.sparse.csr_matrix((chr_anchor_file['ratio'], (rows, cols)), shape=(matrix_size, matrix_size))  # construct sparse CSR matrix
+                if use_raw:
+                    sparse_matrix = scipy.sparse.csr_matrix((chr_anchor_file['obs'], (rows, cols)), shape=(
+                    matrix_size, matrix_size))  # construct sparse CSR matrix
+                else:
+                    sparse_matrix = scipy.sparse.csr_matrix((chr_anchor_file['ratio'], (rows, cols)), shape=(matrix_size, matrix_size))  # construct sparse CSR matrix
             if force_symmetry:
                 sparse_triu = scipy.sparse.triu(sparse_matrix)
                 sparse_matrix = sparse_triu + sparse_triu.transpose()
             if not ignore_sparse:
-                scipy.sparse.save_npz(sparse_data_dir + sparse_rep_dir + file_name, sparse_matrix)  # save precompiled data
+                scipy.sparse.save_npz(os.path.join(sparse_data_dir, sparse_rep_dir, file_name), sparse_matrix)  # save precompiled data
     return sparse_matrix
 
 
@@ -660,8 +666,8 @@ def draw_heatmap(matrix, color_scale, ax=None, return_image=False):
     elif np.max(matrix) < 2:
         breaks = np.arange(1.001, np.max(matrix), (np.max(matrix) - 1.001) / 19)
     else:
-        step = (np.quantile(matrix, q=0.98) - 1) / 18
-        up = np.quantile(matrix, q=0.98) + 0.011
+        step = (np.quantile(matrix, q=0.95) - 1) / 18
+        up = np.quantile(matrix, q=0.95) + 0.011
         if up < 2:
             up = 2
             step = 0.999 / 18

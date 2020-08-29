@@ -12,7 +12,7 @@ from utils import load_chr_ratio_matrix_from_sparse, sorted_nicely, get_chromoso
 
 
 class DataGenerator():
-    def __init__(self, data_dir, target_dir, anchor_dir, matrix_size, step_size, limit_2Mb=384, batch_size=16, matrices_per_depth=1, batches_per_chr=128, shuffle=True, diagonal_only=True):
+    def __init__(self, data_dir, target_dir, anchor_dir, matrix_size, step_size, sparse_dir='data', limit_2Mb=384, batch_size=4, matrices_per_depth=1, batches_per_chr=128, shuffle=True, diagonal_only=True):
         self.data_dir = data_dir
         self.target_dir = target_dir
         self.depth_dirs = os.listdir(self.data_dir)
@@ -26,6 +26,10 @@ class DataGenerator():
             else:
                 assert 'Did not recognize read depth from directory name %s' % d
         self.read_depths = np.log(self.read_depths)
+        sorted_indices = np.argsort(self.read_depths)
+        self.read_depths = self.read_depths[sorted_indices]
+        self.read_depth_labels = np.array(self.read_depth_labels)[sorted_indices]
+        self.depth_dirs = np.array(self.depth_dirs)[sorted_indices]
         #self.read_depths = self.read_depths / np.max(self.read_depths)   # normalize to 0-1
         #self.read_depths = (np.array(self.read_depths) - np.mean(self.read_depths)) / np.std(self.read_depths)
         self.depth_dirs = [os.path.join(self.data_dir, d) for d in self.depth_dirs]  # make depth path absolute
@@ -36,6 +40,7 @@ class DataGenerator():
         self.genome_length = self.get_genome_length()
         self.matrix_size = matrix_size
         self.step_size = step_size
+        self.sparse_dir = sparse_dir
         self.limit_2Mb = limit_2Mb
         self.input_shape = (self.matrix_size, self.matrix_size, 1)
         self.batch_size = batch_size
@@ -102,7 +107,7 @@ class DataGenerator():
             depth_batch = []
             n_batches = 0
             for chromosome in self.chr_lengths.keys():
-                print(chromosome)
+                #print(chromosome)
                 if chromosome in anchor_lists.keys():
                     anchor_list = anchor_lists[chromosome]
                 else:
@@ -114,6 +119,11 @@ class DataGenerator():
                             continue
                         if abs(row_i - col_i) > self.limit_2Mb:  # max distance from diagonal with actual values
                             continue
+                        if not self.diagonal_only:
+                            row_offset = random.randint(0, self.step_size)
+                            col_offset = random.randint(0, self.step_size)
+                            row_i += row_offset
+                            col_i += col_offset
                         for depth_dir, read_depth in zip(self.depth_dirs, self.read_depths):
                             if depth_dir in current_chromosomes.keys():
                                 sparse_matrix = current_chromosomes[depth_dir]
@@ -145,7 +155,6 @@ class DataGenerator():
                                 target_chromosomes[chromosome] = target_matrix
                             else:
                                 target_matrix = target_chromosomes[chromosome]
-
                             rows = slice(row_i, row_i + self.matrix_size)
                             cols = slice(col_i, col_i + self.matrix_size)
                             tile = sparse_matrix[rows, cols].A
