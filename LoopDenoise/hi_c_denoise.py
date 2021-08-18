@@ -1,5 +1,8 @@
 import sys
-from LoopDenoise.denoise_model import DenoiseModel
+import matplotlib
+matplotlib.use('Agg')  # necessary when plotting without $DISPLAY
+sys.path.append('../')
+from denoise_model import DenoiseModel
 import numpy as np
 
 if __name__ == '__main__':
@@ -24,7 +27,7 @@ if __name__ == '__main__':
                        start_filters=8,
                        filter_size=13,
                        transpose_filter_size=2,
-                       normalize=True,
+                       normalize=False,
                        model_name=experiment_name,
                        activation='relu',
                        loss_type='mse',
@@ -33,16 +36,10 @@ if __name__ == '__main__':
               target_dir=target_dir,
               anchor_dir=anchor_dir,
               multi_input=True,
-              learning_rate=1e-3,
+              learning_rate=1e-5,
               val_noisy_dir=val_noisy_dir,
               val_target_dir=val_target_dir,
               val_anchor_dir=anchor_dir,
               val_multi_input=True,
-              validate=True,
+              validate=False,
               save_imgs=True)
-
-
-
-
-
-
