@@ -21,25 +21,35 @@ DeepLoop was developed and tested using Python 3.5 and following Python packages
 * `pandas`
 * `matplotlib`
 * `opencv-python`
-* `keras`
 * `tensorflow`
 
 The packages can be installed by running the following command:
 
 `pip3 install -r requirements.txt`
 
-If you plan on training your own model you will want to use a GPU enabled version of TensorFlow to avoid long training times.  We used `tensorflow-gpu==1.5.0` and `keras==2.2.4`.  For prediction GPU is not necessary but it will be faster than using CPU.
+This will also install optional visualization and analysis tools we use such as:
+
+* `cooler`
+* `jupyter`
+* `higlass-python`
+
+If you plan on training your own model you will want to use a GPU enabled version of TensorFlow to intractably long training times.  We used `tensorflow-gpu==2.3.1` but any TF2 version should work.  For prediction GPU is not necessary but it will be faster than using CPU.
 
 # DeepLoop Usage
-A detail example for HiC data prepossessing (downloading, mapping, filtering and HiCorr bias correction) is in https://github.com/JinLabBioinfo/DeepLoop/blob/master/preprocessing/
 
-The "temp_by_chrom" directory in the output of HiCorr bias correction contains loop anchor pairs with raw reads and expected reads.
-The format is <loop_anchor1> <loop_anchor2> <raw_reads> <expected_reads>  
-The script "run_prediction.sh" will check the cis-2M reads for input bias-corrected directory(temp_by_chrom). The LoopDenoise will be applied when the cis-2M reads is over than 250M. The LoopEnhance will be applied when the depth is lower than 250M, the LoopEnhance model trained by similar depth will be chosen.
-```
-./run_prediction.sh <anchor_bed_dir> <path to models> <path to anchor_to_anchor files> <output path>
-<anchor_bed_dir>: The path should contain the anchor to anchor file separated by chromosome, name as "chr1.bed", the anchor_bed file should be consistent with the file usde in HiCorr;
-<path_to_models>: The path to the LoopEnhance/LoopDenoise models;
-<path to anchor_to_anchor files>: The path to the "temp_by_chrom" from HiCorr;
-<output path>: The output path for separated LoopDenoise/LoopEnhance anchor_to_anchor files.
-```
+## Preprocessing
+A detail example for Hi-C data prepossessing (downloading, mapping, filtering and HiCorr bias correction) is in https://github.com/JinLabBioinfo/DeepLoop/blob/master/preprocessing/
+
+We recommend that users start from raw fastq data to ensure reproducibility.
+
+## Denoise/Enhance new Hi-C data
+
+To run either a LoopDenoise or LoopEnhance model on a HiCorr corrected dataset, please refer to the [prediction walkthrough notebook](https://github.com/JinLabBioinfo/DeepLoop/blob/7c742f4bf6ab57e2204c9cc21ea5f87bc60f7475/examples/walkthrough_prediction.ipynb)
+
+## Visualization with [Cooler](https://github.com/open2c/cooler) and [HiGlass](http://higlass.io/)
+
+For visualization and analysis of DeepLoop output, we recommend converting to cooler file as outlined in the [cooler walkthrough notebook](https://github.com/JinLabBioinfo/DeepLoop/blob/7c742f4bf6ab57e2204c9cc21ea5f87bc60f7475/examples/walkthrough_cooler.ipynb)
+
+## Training new models
+
+If you wish to train a new model, ensure you have access to a machine with a GPU and refer to the [training walkthrough notebook](https://github.com/JinLabBioinfo/DeepLoop/blob/7c742f4bf6ab57e2204c9cc21ea5f87bc60f7475/examples/walkthrough_training.ipynb)
