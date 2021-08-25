@@ -3,8 +3,8 @@ import glob
 import datetime
 import time
 import pickle
-from keras.optimizers import Adam
-from keras.models import model_from_json
+import tensorflow as tf
+from tensorflow.keras.models import model_from_json
 import numpy as np
 import matplotlib.pyplot as plt
 from utils.cnn_architectures import Autoencoder
@@ -29,7 +29,7 @@ class DenoiseModel(Autoencoder):
                  transpose_filter_size=2,
                  branching_rate=2.,
                  depth=2,
-                 dropout=0.5,
+                 dropout=0.0,
                  normalize=False,
                  model_name='denoise',
                  activation='relu',
@@ -122,13 +122,13 @@ class DenoiseModel(Autoencoder):
             learning_rate (:obj:`float`) : size of each gradient step during mini-batch optimization
             save_imgs (:obj:`bool`) : set to True to save training visualizations
         """
-        optimizer = Adam(lr=learning_rate)
+        optimizer = tf.keras.optimizers.Adam(lr=learning_rate)
         metrics = [self.psnr, self.jaccard_metric_weighted(smooth=100)]  # called and return after train_on_batch
         self.n2n.compile(optimizer=optimizer,
                          loss=self.loss_type,
                          metrics=metrics)
-        print('Memory Estimates:')
-        print(get_model_memory_usage(self.batch_size, self.n2n), 'GB\t')
+        #print('Memory Estimates:')
+        #print(get_model_memory_usage(self.batch_size, self.n2n), 'GB\t')
         try:
             files = glob.glob('images/*')
             for f in files:
@@ -145,8 +145,7 @@ class DenoiseModel(Autoencoder):
                          target_dir,
                          matrix_size=self.matrix_size,
                          multi_input=True,
-                         anchor_dir=anchor_dir,
-                         locus=4204)
+                         anchor_dir=anchor_dir)
             sample_1 = np.load('data/sample_1.npy')
             sample_2 = np.load('data/sample_2.npy')
             sample_3 = np.load('data/sample_3.npy')
@@ -208,7 +207,7 @@ class DenoiseModel(Autoencoder):
                                                                                       random_steps=True,
                                                                                       normalize=self.normalize,
                                                                                       anchor_dir=val_anchor_dir):
-                    val_metrics = self.enhance_model.test_on_batch(val_noisy_batch, val_target_batch)
+                    val_metrics = self.n2n.test_on_batch(val_noisy_batch, val_target_batch)
                     val_loss = np.append(val_loss, val_metrics[0])
                     val_psnr = np.append(val_psnr, val_metrics[1])
                     val_jaccard = np.append(val_jaccard, val_metrics[2])
@@ -260,10 +259,7 @@ class DenoiseModel(Autoencoder):
             epoch (:obj:`int`) : current epoch of the training process
         """
         # Save the models
-        try:
-            os.mkdir(self.model_out)
-        except FileExistsError:
-            pass
+        os.makedirs(self.model_out, exist_ok=True)
         self.n2n.save_weights(self.model_out + self.model_name + '_%depochs.h5' % epoch)
         with open(self.model_out + self.model_name + '.json', 'w') as f:
             f.write(self.n2n.to_json())
@@ -411,7 +407,8 @@ class DenoiseModel(Autoencoder):
         ax.xaxis.set_ticks([])
         ax.xaxis.tick_top()
         plt.title('Denoised A', size=6)
-        draw_heatmap(denoised_a[0, ..., 0], 0, ax=ax)
+        plt.imshow(denoised_a[0, ..., 0], cmap='Reds')
+        #draw_heatmap(denoised_a[0, ..., 0], 0, ax=ax)
 
         ax = plt.subplot(347)
         ax.yaxis.set_ticks([])
@@ -457,7 +454,7 @@ class DenoiseModel(Autoencoder):
         plt.title('PSNR', size=6)
         ax.plot(self.psnr_plot, label='train', linewidth=0.2)
         if validate:
-            ax.plot(self.val_psnr, label='test', linewidth=0.2)
+            ax.plot(self.val_psnr_plot, label='test', linewidth=0.2)
         ax.legend(loc='best', prop={'size': 4})
 
         if target is not None:

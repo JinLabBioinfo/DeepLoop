@@ -1,12 +1,6 @@
 import numpy as np
-from keras.models import Model
-from keras.layers import Input, Conv2DTranspose, Concatenate, MaxPooling2D, UpSampling2D, Dropout, Activation, Dense
-from keras.layers.convolutional import Conv2D
-from keras.layers.normalization import BatchNormalization
-from keras.layers import LeakyReLU
 import tensorflow as tf
-from keras import backend as K
-
+from tensorflow import keras
 
 class Autoencoder:
     """
@@ -67,39 +61,39 @@ class Autoencoder:
         Returns:
             Uncompiled Keras model
         """
-        input_matrix = Input(shape=(None, None, 1))
-        y = Conv2D(self.start_filters, self.filter_size, strides=1 if maxpool else 2, padding='same')(input_matrix)
-        y = Activation(self.activation)(y)
-        y = MaxPooling2D((2, 2))(y) if maxpool else y
-        y = Conv2D(self.start_filters, self.filter_size, strides=1 if maxpool else 2, padding='same')(y)
-        y = Activation(self.activation)(y)
-        y = MaxPooling2D((2, 2))(y) if maxpool else y
+        input_matrix = keras.layers.Input(shape=(None, None, 1))
+        y = keras.layers.Conv2D(self.start_filters, self.filter_size, strides=1 if maxpool else 2, padding='same')(input_matrix)
+        y = keras.layers.Activation(self.activation)(y)
+        y = keras.layers.MaxPooling2D((2, 2))(y) if maxpool else y
+        y = keras.layers.Conv2D(self.start_filters, self.filter_size, strides=1 if maxpool else 2, padding='same')(y)
+        y = keras.layers.Activation(self.activation)(y)
+        y = keras.layers.MaxPooling2D((2, 2))(y) if maxpool else y
         if upconv:
-            y = UpSampling2D()(y)
-            y = Conv2D(self.start_filters, self.filter_size, padding='same')(y)
-            y = UpSampling2D()(y)
-            y = Conv2D(self.start_filters, self.filter_size, padding='same')(y)
-            y = Conv2D(1, self.filter_size, padding='same')(y)
-            y = Activation(self.activation)(y)
+            y = keras.layers.UpSampling2D()(y)
+            y = keras.layers.Conv2D(self.start_filters, self.filter_size, padding='same')(y)
+            y = keras.layers.UpSampling2D()(y)
+            y = keras.layers.Conv2D(self.start_filters, self.filter_size, padding='same')(y)
+            y = keras.layers.Conv2D(1, self.filter_size, padding='same')(y)
+            y = keras.layers.Activation(self.activation)(y)
         else:
-            y = Conv2DTranspose(self.start_filters, self.transpose_filter_size, strides=2, padding='same')(y)
-            y = Conv2DTranspose(self.start_filters, self.transpose_filter_size, strides=2, padding='same')(y)
-            y = Conv2D(1, self.filter_size, padding='same')(y)
-            y = Activation(self.activation)(y)
-        model = Model(inputs=input_matrix, outputs=y)
+            y = keras.layers.Conv2DTranspose(self.start_filters, self.transpose_filter_size, strides=2, padding='same')(y)
+            y = keras.layers.Conv2DTranspose(self.start_filters, self.transpose_filter_size, strides=2, padding='same')(y)
+            y = keras.layers.Conv2D(1, self.filter_size, padding='same')(y)
+            y = keras.layers.Activation(self.activation)(y)
+        model = keras.models.Model(inputs=input_matrix, outputs=y)
         print(model.summary())
         return model
 
     @staticmethod
     def get_hi_c_plus():
-        input_matrix = Input(shape=(None, None, 1))
-        y = Conv2D(8, 9, padding='same')(input_matrix)
-        y = Activation('relu')(y)
-        y = Conv2D(8, 1, padding='same')(y)
-        y = Activation('relu')(y)
-        y = Conv2D(1, 5, padding='same')(y)
-        y = Activation('relu')(y)
-        model = Model(inputs=input_matrix, outputs=y)
+        input_matrix = keras.layers.Input(shape=(None, None, 1))
+        y = keras.layers.Conv2D(8, 9, padding='same')(input_matrix)
+        y = keras.layers.Activation('relu')(y)
+        y = keras.layers.Conv2D(8, 1, padding='same')(y)
+        y = keras.layers.Activation('relu')(y)
+        y = keras.layers.Conv2D(1, 5, padding='same')(y)
+        y = keras.layers.Activation('relu')(y)
+        model = keras.models.Model(inputs=input_matrix, outputs=y)
         print(model.summary())
         return model
 
@@ -119,96 +113,50 @@ class Autoencoder:
         """
 
         def conv_block(x, num_filters, acti, bn, res, do=0):
-            y = Conv2D(num_filters, self.filter_size, padding='same')(x)
-            y = Activation(acti)(y)
-            y = BatchNormalization()(y) if bn else y
-            y = Dropout(do)(y) if do > 0 else y
-            y = Conv2D(num_filters, self.filter_size, padding='same')(y)
-            y = Activation(acti)(y)
-            y = BatchNormalization()(y) if bn else y
+            y = keras.layers.Conv2D(num_filters, self.filter_size, padding='same')(x)
+            y = keras.layers.Activation(acti)(y)
+            y = keras.layers.BatchNormalization()(y) if bn else y
+            y = keras.layers.Dropout(do)(y) if do > 0 else y
+            y = keras.layers.Conv2D(num_filters, self.filter_size, padding='same')(y)
+            y = keras.layers.Activation(acti)(y)
+            y = keras.layers.BatchNormalization()(y) if bn else y
 
-            return Concatenate()([x, y]) if res else y
+            return keras.layers.Concatenate()([x, y]) if res else y
 
         def level_block(x, num_filters, depth, branch_rate, acti, dropout, bn, max_pool, up_sample, res):
             if depth > 0:
                 y = conv_block(x, num_filters, acti, bn, res)
                 padding = 'same' if pad_pooling else 'valid'
-                x = MaxPooling2D(padding=padding)(y) if max_pool else Conv2D(num_filters, self.filter_size, strides=2, padding='same')(y)
+                x = keras.layers.MaxPooling2D(padding=padding)(y) if max_pool else keras.layers.Conv2D(num_filters,
+                                                                                                       self.filter_size,
+                                                                                                       strides=2,
+                                                                                                       padding='same')(y)
                 x = level_block(x, int(branch_rate * num_filters), depth - 1, branch_rate, acti, dropout, bn, max_pool,
                                 up_sample, res)
                 if up_sample:
-                    x = UpSampling2D()(x)
-                    x = Conv2D(num_filters, self.filter_size, padding='same')(x)
-                    x = Activation(acti)(x)
+                    x = keras.layers.UpSampling2D()(x)
+                    x = keras.layers.Conv2D(num_filters, self.filter_size, padding='same')(x)
+                    x = keras.layers.Activation(acti)(x)
                 else:
-                    x = Conv2DTranspose(num_filters, self.filter_size, strides=2, padding='same')(x)
-                    x = Activation(acti)(x)
-                y = Concatenate()([y, x])
+                    x = keras.layers.Conv2DTranspose(num_filters, self.filter_size, strides=2, padding='same')(x)
+                    x = keras.layers.Activation(acti)(x)
+                y = keras.layers.Concatenate()([y, x])
                 x = conv_block(y, num_filters, acti, bn, res)
             else:
                 x = conv_block(x, num_filters, acti, bn, res, dropout)
 
             return x
 
-        input_matrix = Input(shape=(None, None, 1))
+        input_matrix = keras.layers.Input(shape=(self.matrix_size, self.matrix_size, 1))
         output = level_block(input_matrix, self.start_filters, self.depth, self.branching_rate, self.activation,
                              self.dropout, batch_norm, maxpool, upconv, residual)
 
-        output = Conv2D(1, 1)(output)
+        output = keras.layers.Conv2D(1, 1)(output)
 
-        model = Model(inputs=input_matrix, outputs=output)
+        model = keras.models.Model(inputs=input_matrix, outputs=output)
         print(model.summary())
         return model
 
-    def get_latent_unet_model(self, batch_norm=False, maxpool=True, upconv=True, residual=True):
-        """U-Net Generator"""
-
-        self.gf = self.start_filters
-
-        def conv2d(layer_input, filters, f_size=9, bn=True):
-            """Layers used during downsampling"""
-            d = Conv2D(filters, kernel_size=f_size, strides=2, padding='same')(layer_input)
-            d = LeakyReLU(alpha=0.2)(d)
-            if bn:
-                d = BatchNormalization(momentum=0.8)(d)
-            return d
-
-        def deconv2d(layer_input, skip_input, filters, f_size=self.filter_size, dropout_rate=0):
-            """Layers used during upsampling"""
-            u = UpSampling2D(size=2)(layer_input)
-            u = Conv2D(filters, kernel_size=f_size, strides=1, padding='same', activation='relu')(u)
-            if dropout_rate:
-                u = Dropout(dropout_rate)(u)
-            u = BatchNormalization(momentum=0.8)(u)
-            u = Concatenate()([u, skip_input])
-            return u
-
-        # Image input
-        d0 = Input(shape=(self.matrix_size, self.matrix_size, 1))
-
-        # Downsampling
-        d1 = conv2d(d0, self.gf, bn=False)
-        d2 = conv2d(d1, self.gf * 2)
-        d3 = conv2d(d2, self.gf * 4)
-        d4 = conv2d(d3, self.gf * 8)
-        d5 = conv2d(d4, self.gf * 8)
-        #d6 = conv2d(d5, self.gf * 8)
-        #d7 = conv2d(d6, self.gf * 8)
-
-        fc = Dense(128)(d5)
-
-        # Upsampling
-        #u1 = deconv2d(fc, d6, self.gf * 8)
-        #u2 = deconv2d(u1, d5, self.gf * 8)
-        u3 = deconv2d(fc, d4, self.gf * 8)
-        u4 = deconv2d(u3, d3, self.gf * 4)
-        u5 = deconv2d(u4, d2, self.gf * 2)
-        u6 = deconv2d(u5, d1, self.gf)
-
-        u7 = UpSampling2D(size=2)(u6)
-        output_img = Conv2D(1, kernel_size=1, strides=1)(u7)
-
-        return Model(d0, output_img)
 
     def model_params_to_name(self):
         """
@@ -231,8 +179,8 @@ class Autoencoder:
         Returns:
             Base 10 logarithm of input tensor
         """
-        numerator = tf.log(x)
-        denominator = tf.log(tf.constant(10, dtype=numerator.dtype))
+        numerator = tf.math.log(x)
+        denominator = tf.math.log(tf.constant(10, dtype=numerator.dtype))
         return numerator / denominator
 
     def psnr(self, y_true, y_pred):
@@ -250,8 +198,8 @@ class Autoencoder:
             max_pixel = 1.0
         else:
             max_pixel = 5.0
-        y_pred = K.clip(y_pred, 0.0, max_pixel)
-        return 10.0 * self.tf_log10((max_pixel ** 2) / (K.mean(K.square(y_pred - y_true))))
+        y_pred = keras.backend.clip(y_pred, 0.0, max_pixel)
+        return 10.0 * self.tf_log10((max_pixel ** 2) / (keras.backend.mean(keras.backend.square(y_pred - y_true))))
 
     @staticmethod
     def jaccard_metric_weighted(smooth=100):
@@ -273,8 +221,8 @@ class Autoencoder:
             mask = tf.logical_and(mask_true, mask_pred)
             y_true = tf.boolean_mask(y_true, mask)
             y_pred = tf.boolean_mask(y_pred, mask)
-            intersection = K.sum(K.minimum(y_pred, y_true))
-            union = K.sum(K.maximum(y_pred, y_true))
+            intersection = keras.backend.sum(keras.backend.minimum(y_pred, y_true))
+            union = keras.backend.sum(keras.backend.maximum(y_pred, y_true))
             jac = 1 - (intersection + smooth) / (union + smooth)
             return jac
 

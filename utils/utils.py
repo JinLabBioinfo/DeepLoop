@@ -5,12 +5,13 @@ import cv2
 import random
 import pickle
 import numpy as np
-from keras import backend as K
+import tensorflow.keras.backend as K
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.colors
 import matplotlib.cm
 import scipy.sparse
+from scipy.sparse import coo_matrix, csr_matrix, triu, tril
 import scipy.ndimage
 
 chromosome_labels = {'chr1': 0, 'chr2': 1, 'chr3': 2, 'chr4': 3, 'chr5': 4, 'chr6': 5, 'chr7': 6, 'chr8': 7, 'chr9': 8,
@@ -39,17 +40,25 @@ def open_anchor_to_anchor(filename):
         ``pandas.DataFrame``: if reading a normalized anchor to anchor file, columns are ``a1 a2 obs exp ratio``
         and if reading a denoised or enhanced anchor to anchor file, columns are ``a1 a2 ratio``
     '''
-    try:  # if before denoise top loops
+    df = pd.read_csv(filename, sep='\t')
+    n_cols = len(df.columns)
+    if n_cols == 4: # if before denoise top loops
         df = pd.read_csv(filename,
                          sep='\t',
                          names=['anchor1', 'anchor2', 'obs', 'exp'])
         df['ratio'] = (df['obs'] + 5) / (df['exp'] + 5)
-    except ValueError:  # after denoise has no obs or exp
+    elif n_cols == 5:  # includes p-value
         df = pd.read_csv(filename,
                          sep='\t',
-                         names=['anchor1', 'anchor2', 'ratio'],
-                         usecols=['anchor1', 'anchor2', 'ratio'])
+                         names=['anchor1', 'anchor2', 'obs', 'exp', 'p_val'])
+        df['ratio'] = (df['obs'] + 5) / (df['exp'] + 5)
+    else: # after denoise has no obs or exp
+        df = pd.read_csv(filename,
+                         sep='\t',
+                         names=['anchor1', 'anchor2', 'ratio'])
+    df = df[['anchor1', 'anchor2', 'ratio']]
     return df
+
 
 def open_full_genome(data_dir):
     '''
@@ -89,7 +98,16 @@ def get_chromosome_from_filename(filename):
         return filename[chr_index: file_ending_index]
 
 
-def save_samples(input_dir, target_dir, matrix_size, multi_input=False, dir_3=None, combined_dir=None, anchor_dir=None, name='sample', chr_index=0, locus=18000, force_symmetry=True):
+def locus_to_anchor(chr_name, locus, anchor_dir):
+    anchor_list = pd.read_csv(anchor_dir + '%s.bed' % chr_name, sep='\t',
+                              names=['chr', 'start', 'end', 'anchor'])  # read anchor list file
+    loci_indices = (anchor_list['start'] <= locus) & (locus <= anchor_list['end']) & (
+                anchor_list['chr'] == chr_name)
+    print(np.where(loci_indices)[0][0])
+    return int(np.where(loci_indices)[0][0])
+
+
+def save_samples(input_dir, target_dir, matrix_size, multi_input=False, dir_3=None, combined_dir=None, anchor_dir=None, name='sample', chr_name='chr6', locus_start=25922605, locus_end=26709867, force_size=128, force_symmetry=True):
     """
     Saves sample matrices for use in training visualizations
 
@@ -118,9 +136,7 @@ def save_samples(input_dir, target_dir, matrix_size, multi_input=False, dir_3=No
             input_folder_3 = os.listdir(input_dir)[2] + '/'
         except IndexError:
             pass
-        chr_name = get_chromosome_from_filename(os.listdir(input_dir + input_folder_1)[chr_index])
-    else:
-        chr_name = get_chromosome_from_filename(os.listdir(input_dir)[chr_index])
+    chr_index = min(int(chr_name.replace('chr', '')), len(os.listdir(input_dir + input_folder_1)) - 1)
     print('Saving samples from', chr_name, '...')
     if (name == 'enhance' or name == 'val_enhance') and multi_input:
         matrix_1 = load_chr_ratio_matrix_from_sparse(input_dir + input_folder_1, os.listdir(input_dir + input_folder_1)[chr_index], anchor_dir, force_symmetry=force_symmetry)
@@ -144,29 +160,34 @@ def save_samples(input_dir, target_dir, matrix_size, multi_input=False, dir_3=No
                 combined_matrix = load_chr_ratio_matrix_from_sparse(combined_dir, os.listdir(combined_dir)[chr_index], anchor_dir, force_symmetry=force_symmetry)
             else:
                 combined_matrix = None
-    i = locus
-    j = i  # symmetric matrix for visualizations
-    tile_1 = matrix_1[i:i + matrix_size, j:j + matrix_size].A
-    tile_2 = matrix_2[i:i + matrix_size, j:j + matrix_size].A
-    tile_1 = np.expand_dims(tile_1, 3)  # add channel dimension
+    i = locus_to_anchor(chr_name, locus_start, anchor_dir)
+    j = locus_to_anchor(chr_name, locus_end, anchor_dir)
+    mid = int((i + j) / 2)
+    i = max(0, mid - int(force_size / 2))
+    j = i + force_size
+    rows = slice(i, j)
+    cols = slice(i, j)
+    tile_1 = matrix_1[rows, cols].A
+    tile_2 = matrix_2[rows, cols].A
+    tile_1 = np.expand_dims(tile_1, -1)  # add channel dimension
     tile_1 = np.expand_dims(tile_1, 0)  # model expects a list of inputs
-    tile_2 = np.expand_dims(tile_2, 3)
+    tile_2 = np.expand_dims(tile_2, -1)
     tile_2 = np.expand_dims(tile_2, 0)
     if matrix_3 is not None:
         tile_3 = matrix_3[i:i + matrix_size, j:j + matrix_size].A
-        tile_3 = np.expand_dims(tile_3, 3)
+        tile_3 = np.expand_dims(tile_3, -1)
         tile_3 = np.expand_dims(tile_3, 0)
         np.save('%s%s_3' % (data_dir, name), tile_3)
     if combined_matrix is not None:
         combined_tile = combined_matrix[i:i + matrix_size, j:j + matrix_size].A
-        combined_tile = np.expand_dims(combined_tile, 3)
+        combined_tile = np.expand_dims(combined_tile, -1)
         combined_tile = np.expand_dims(combined_tile, 0)
         np.save('%s%s_combined' % (data_dir, name), combined_tile)
     np.save('%s%s_1' % (data_dir, name), tile_1)
     np.save('%s%s_2' % (data_dir, name), tile_2)
 
 
-def load_chr_ratio_matrix_from_sparse(dir_name, file_name, anchor_dir, anchor_list=None, chr_name=None, dummy=5, ignore_sparse=False, force_symmetry=False):
+def load_chr_ratio_matrix_from_sparse(dir_name, file_name, anchor_dir, sparse_dir=None, anchor_list=None, chr_name=None, dummy=5, ignore_sparse=False, force_symmetry=True, use_raw=False):
     """
     Loads data as a sparse matrix by either reading a precompiled sparse matrix or an anchor to anchor file which is converted to sparse CSR format.
     Ratio values are computed using the observed (obs) and expected (exp) values:
@@ -189,30 +210,25 @@ def load_chr_ratio_matrix_from_sparse(dir_name, file_name, anchor_dir, anchor_li
     if chr_name is None:
         chr_name = get_chromosome_from_filename(file_name)
     sparse_rep_dir = dir_name[dir_name[: -1].rfind('/') + 1:]  # directory where the pre-compiled sparse matrices are saved
-    try:
-        os.mkdir(sparse_data_dir + sparse_rep_dir)
-    except FileExistsError:
-        pass
+    if sparse_dir is not None:
+        sparse_data_dir = sparse_dir
+    os.makedirs(os.path.join(sparse_data_dir, sparse_rep_dir), exist_ok=True)
     if file_name.endswith('.npz'):  # loading pre-combined and pre-compiled sparse data
         sparse_matrix = scipy.sparse.load_npz(dir_name + file_name)
     else:  # load from file name
-        try:
-            os.mkdir(sparse_data_dir + sparse_rep_dir)
-        except FileExistsError:
-            pass
-        if file_name + '.npz' in os.listdir(sparse_data_dir + sparse_rep_dir) and not ignore_sparse:  # check if pre-compiled data already exists
-            sparse_matrix = scipy.sparse.load_npz(sparse_data_dir + sparse_rep_dir + file_name + '.npz')
+        if file_name + '.npz' in os.listdir(os.path.join(sparse_data_dir, sparse_rep_dir)) and not ignore_sparse:  # check if pre-compiled data already exists
+            sparse_matrix = scipy.sparse.load_npz(os.path.join(sparse_data_dir, sparse_rep_dir, file_name + '.npz'))
         else:  # otherwise generate sparse matrix from anchor2anchor file and save pre-compiled data
             if anchor_list is None:
                 if anchor_dir is None:
                     assert 'You must supply either an anchor reference list or the directory containing one'
-                anchor_list = pd.read_csv(anchor_dir + '%s.bed' % chr_name, sep='\t',
+                anchor_list = pd.read_csv(os.path.join(anchor_dir, '%s.bed' % chr_name), sep='\t',
                                           names=['chr', 'start', 'end', 'anchor'])  # read anchor list file
             matrix_size = len(anchor_list) # matrix size is needed to construct sparse CSR matrix
             anchor_dict = anchor_list_to_dict(anchor_list['anchor'].values)  # convert to anchor --> index dictionary
             try:  # first try reading anchor to anchor file as <a1> <a2> <obs> <exp>
                 chr_anchor_file = pd.read_csv(
-                    dir_name + file_name,
+                    os.path.join(dir_name, file_name),
                     delimiter='\t',
                     names=['anchor1', 'anchor2', 'obs', 'exp'],
                     usecols=['anchor1', 'anchor2', 'obs', 'exp'])  # read chromosome anchor to anchor file
@@ -222,18 +238,26 @@ def load_chr_ratio_matrix_from_sparse(dir_name, file_name, anchor_dir, anchor_li
                 sparse_matrix = scipy.sparse.csr_matrix((ratio, (rows, cols)), shape=(matrix_size, matrix_size))  # construct sparse CSR matrix
             except:  # otherwise read anchor to anchor file as <a1> <a2> <ratio>
                 chr_anchor_file = pd.read_csv(
-                    dir_name + file_name,
+                    os.path.join(dir_name, file_name),
                     delimiter='\t',
                     names=['anchor1', 'anchor2', 'ratio'],
                     usecols=['anchor1', 'anchor2', 'ratio'])
                 rows = np.vectorize(anchor_to_locus(anchor_dict))(chr_anchor_file['anchor1'].values)  # convert anchor names to row indices
                 cols = np.vectorize(anchor_to_locus(anchor_dict))(chr_anchor_file['anchor2'].values)  # convert anchor names to column indices
-                sparse_matrix = scipy.sparse.csr_matrix((chr_anchor_file['ratio'], (rows, cols)), shape=(matrix_size, matrix_size))  # construct sparse CSR matrix
+                if use_raw:
+                    sparse_matrix = scipy.sparse.csr_matrix((chr_anchor_file['obs'], (rows, cols)), shape=(
+                    matrix_size, matrix_size))  # construct sparse CSR matrix
+                else:
+                    sparse_matrix = scipy.sparse.csr_matrix((chr_anchor_file['ratio'], (rows, cols)), shape=(matrix_size, matrix_size))  # construct sparse CSR matrix
             if force_symmetry:
+                upper_sum =  triu(sparse_matrix, k=1).sum()
+                lower_sum = tril(sparse_matrix, k=-1).sum()
+                if upper_sum == 0 or lower_sum == 0:
+                    sparse_matrix = sparse_matrix + sparse_matrix.transpose()
                 sparse_triu = scipy.sparse.triu(sparse_matrix)
                 sparse_matrix = sparse_triu + sparse_triu.transpose()
             if not ignore_sparse:
-                scipy.sparse.save_npz(sparse_data_dir + sparse_rep_dir + file_name, sparse_matrix)  # save precompiled data
+                scipy.sparse.save_npz(os.path.join(sparse_data_dir, sparse_rep_dir, file_name), sparse_matrix)  # save precompiled data
     return sparse_matrix
 
 
@@ -296,26 +320,29 @@ def split_matrix(input_filename,
                     continue
                 input_tile = input_matrix[i:i + matrix_size, j:j + matrix_size].A
                 target_tile = target_matrix[i:i + matrix_size, j:j + matrix_size].A
-                input_tile = np.expand_dims(input_tile, axis=3)
-                target_tile = np.expand_dims(target_tile, axis=3)
-                input_batch = np.append(input_batch, input_tile)
-                target_batch = np.append(target_batch, target_tile)
+                #input_tile = np.expand_dims(input_tile, axis=-1)
+                #target_tile = np.expand_dims(target_tile, axis=-1)
+                input_batch.append(input_tile)
+                target_batch.append(target_tile)
                 n_matrices += 1
                 if n_matrices == batch_size:
                     try:
-                        input_batch = np.reshape(input_batch, (n_matrices, matrix_size, matrix_size, 1))
-                        target_batch = np.reshape(target_batch, (n_matrices, matrix_size, matrix_size, 1))
+                        input_batch = np.reshape(np.array(input_batch), (n_matrices, matrix_size, matrix_size, 1))
+                        target_batch = np.reshape(np.array(target_batch), (n_matrices, matrix_size, matrix_size, 1))
                         if normalize:
                             input_batch = normalize_matrix(input_batch)
                             target_batch = normalize_matrix(target_batch)
 
                         yield input_batch, target_batch, input_filename + '_' + str(i)
-                    except ValueError:  # reached end of valid values
-                        pass
-                    finally:
-                        input_batch = np.array([])
-                        target_batch = np.array([])
+                    except ValueError as e:  # reached end of valid values
+                        input_batch = []
+                        target_batch = []
                         n_matrices = 0
+                        pass
+                    input_batch = []
+                    target_batch = []
+                    n_matrices = 0
+
 
 
 def generate_batches_from_chr(input_dir,
@@ -330,7 +357,7 @@ def generate_batches_from_chr(input_dir,
                               normalize=False,
                               diagonal_only=False,
                               upper_triangular_only=False,
-                              force_symmetry=False,
+                              force_symmetry=True,
                               ignore_XY=True,
                               ignore_even_chr=False,
                               ignore_odd_chr=False):
@@ -380,12 +407,22 @@ def generate_batches_from_chr(input_dir,
     Returns:
         (``numpy.array``, ``numpy.array``, ``str``): input batch, target batch, and batch label
     """
-    input_batch = np.array([])
-    target_batch = np.array([])
+    input_batch = []
+    target_batch = []
     if multi_input:
         input_folders = os.listdir(input_dir)  # get list of all folders in input dir
         input_files = sorted(os.listdir(input_dir + input_folders[0]))  # get list of input files (assume all inputs have same name pattern)
         target_files = sorted(os.listdir(target_dir))
+        '''
+        # remove duplicates of chromosomes
+        tmp = []
+        for f in input_files:
+            if '.p_val' in f and f.replace('.p_val', '') in input_files:
+                tmp.append(f.replace('.p_val', ''))
+        if len(tmp) > 0:
+            input_files = tmp
+        print(input_files)
+        '''
     else:
         input_files = sorted(os.listdir(input_dir))
         target_files = sorted(os.listdir(target_dir))
@@ -434,6 +471,9 @@ def generate_batches_from_chr(input_dir,
                                                                             diagonal_only=diagonal_only,
                                                                             upper_triangular_only=upper_triangular_only):
                     yield input_batch, target_batch, figure_title
+                    input_batch = []
+                    target_batch = []
+                    n_matrices = 0
         else:
             input_matrix = load_chr_ratio_matrix_from_sparse(input_dir, input_file, anchor_dir, force_symmetry=force_symmetry)
             target_matrix = load_chr_ratio_matrix_from_sparse(target_dir, target_file, anchor_dir, force_symmetry=force_symmetry)
@@ -453,6 +493,9 @@ def generate_batches_from_chr(input_dir,
                                                                         diagonal_only=diagonal_only,
                                                                         upper_triangular_only=upper_triangular_only):
                 yield input_batch, target_batch, figure_title
+                input_batch = []
+                target_batch = []
+                n_matrices = 0
 
 
 def get_matrices_from_loci(input_dir,
@@ -492,8 +535,8 @@ def get_matrices_from_loci(input_dir,
             if locus:
                 input_tile = input_matrix[i:i + matrix_size, i:i + matrix_size].A
                 target_tile = target_matrix[i:i + matrix_size, i:i + matrix_size].A
-                input_tile = np.expand_dims(input_tile, axis=3)
-                target_tile = np.expand_dims(target_tile, axis=3)
+                input_tile = np.expand_dims(input_tile, axis=-1)
+                target_tile = np.expand_dims(target_tile, axis=-1)
                 input_tile = np.expand_dims(input_tile, axis=0)
                 target_tile = np.expand_dims(target_tile, axis=0)
 
@@ -660,8 +703,8 @@ def draw_heatmap(matrix, color_scale, ax=None, return_image=False):
     elif np.max(matrix) < 2:
         breaks = np.arange(1.001, np.max(matrix), (np.max(matrix) - 1.001) / 19)
     else:
-        step = (np.quantile(matrix, q=0.98) - 1) / 18
-        up = np.quantile(matrix, q=0.98) + 0.011
+        step = (np.quantile(matrix, q=0.95) - 1) / 18
+        up = np.quantile(matrix, q=0.95) + 0.011
         if up < 2:
             up = 2
             step = 0.999 / 18
@@ -774,4 +817,3 @@ def get_model_memory_usage(batch_size, model):
     total_memory = number_size*(batch_size*shapes_mem_count + trainable_count + non_trainable_count)
     gbytes = np.round(total_memory / (1024.0 ** 3), 3)
     return gbytes
-
