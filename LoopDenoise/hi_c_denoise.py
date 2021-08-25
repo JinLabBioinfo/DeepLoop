@@ -44,7 +44,7 @@ if __name__ == '__main__':
     learning_rate = args.learning_rate
     val_noisy_dir = args.val_noisy_dir
     val_target_dir = args.val_target_dir
-    validate = val_downsample_dir is not None and val_target_dir is not None
+    validate = val_noisy_dir is not None and val_target_dir is not None
 
     np.random.seed(42)  # set random seed for reproducible training
 
