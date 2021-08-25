@@ -2,7 +2,7 @@ import os
 import glob
 import datetime
 import time
-from keras.optimizers import Adam, SGD
+import tensorflow as tf
 from keras.models import model_from_json
 import keras.backend as K
 import tensorflow as tf
@@ -34,6 +34,7 @@ class EnhanceModel(Autoencoder):
                  loss_type='mse',
                  model_out='models/enhance/',
                  denoise_model=None,
+                 model_architecture='unet',
                  verbose=True):
         super().__init__(matrix_size=matrix_size,
                          step_size=step_size,
@@ -63,7 +64,10 @@ class EnhanceModel(Autoencoder):
             # Load weights into the new model
             self.enhance_model.load_weights(self.model_out + self.model_name + model_params + '_%d_epochs.h5' % load_pretrained_epoch)
         else:
-            self.enhance_model = self.get_unet_model()
+            if model_architecture == 'unet':
+                self.enhance_model = self.get_unet_model()
+            elif model_architecture == 'hicplus':
+                self.enhance_model = self.get_hi_c_plus()
             print(self.enhance_model.summary())
 
     def train(self,
@@ -79,13 +83,13 @@ class EnhanceModel(Autoencoder):
               validation_curves=False,
               learning_rate=1e-4,
               save_imgs=False):
-        optimizer = Adam(lr=learning_rate)
-        metrics = [self.psnr, self.recovered_loops, self.total_loops_metric]
+        optimizer = tf.keras.optimizers.Adam(lr=learning_rate)
+        metrics = [self.psnr]
         self.enhance_model.compile(optimizer=optimizer,
                                    loss=self.loss_type,
                                    metrics=metrics)
-        print('Memory Estimates:')
-        print(get_model_memory_usage(self.batch_size, self.enhance_model), 'GB\t')
+        #print('Memory Estimates:')
+        #print(get_model_memory_usage(self.batch_size, self.enhance_model), 'GB\t')
         try:
             files = glob.glob('images/*')
             for f in files:
@@ -102,6 +106,8 @@ class EnhanceModel(Autoencoder):
             save_samples(downsample_dir, ground_truth_dir, matrix_size=self.matrix_size, name='enhance', anchor_dir=anchor_dir, multi_input=multi_input)
             downsample_sample = np.load('data/enhance_1.npy')
             ground_truth_sample = np.load('data/enhance_2.npy')
+            val_downsample_sample = None
+            val_ground_truth_sample = None
             if validate:
                 save_samples(val_downsample_dir, val_ground_truth_dir, matrix_size=self.matrix_size, name='val_enhance', anchor_dir=anchor_dir, multi_input=val_multi_input)
                 val_downsample_sample = np.load('data/val_enhance_1.npy')
@@ -163,14 +169,16 @@ class EnhanceModel(Autoencoder):
                            ))
                 batch_loss = np.append(batch_loss, loss[0])
                 batch_psnr = np.append(batch_psnr, loss[1])
-                batch_percent_loops = np.append(batch_percent_loops, loss[2])
-                batch_loops = np.append(batch_loops, loss[3])
+                #batch_percent_loops = np.append(batch_percent_loops, loss[2])
+                #batch_loops = np.append(batch_loops, loss[3])
                 step_i += 1
             self.loss_plot = np.append(self.loss_plot, batch_loss.mean())
             self.psnr_plot = np.append(self.psnr_plot, batch_psnr.mean())
             self.loops_plot = np.append(self.loops_plot, batch_loops.mean())
             batch_percent_loops = batch_percent_loops[~np.isnan(batch_percent_loops)]  # remove any NaN percent values
             self.percent_loops_plot = np.append(self.percent_loops_plot, batch_percent_loops.mean())
+            val_downsample = None
+            val_ground_truth = None
             if validation_curves:
                 val_loss = np.array([])
                 val_psnr = np.array([])
@@ -189,8 +197,8 @@ class EnhanceModel(Autoencoder):
                     val_metrics = self.enhance_model.test_on_batch(val_downsample_batch, val_ground_truth_batch)
                     val_loss = np.append(val_loss, val_metrics[0])
                     val_psnr = np.append(val_psnr, val_metrics[1])
-                    val_percent_loops = np.append(val_percent_loops, val_metrics[2])
-                    val_total_loops = np.append(val_total_loops, val_metrics[3])
+                    #val_percent_loops = np.append(val_percent_loops, val_metrics[2])
+                    #val_total_loops = np.append(val_total_loops, val_metrics[3])
                 self.val_loss_plot = np.append(self.val_loss_plot, np.mean(val_loss))
                 self.val_psnr_plot = np.append(self.val_psnr_plot, np.mean(val_psnr))
                 val_percent_loops = val_percent_loops[~np.isnan(val_percent_loops)]  # remove any NaN percent values
@@ -199,22 +207,19 @@ class EnhanceModel(Autoencoder):
             self.plot_training_visualization(start_time=start_time,
                                              epoch=epoch_i,
                                              step=step_i,
-                                             downsample=downsample_sample,
-                                             ground_truth=ground_truth_sample,
-                                             val_downsample=val_downsample_sample,
-                                             val_ground_truth=val_ground_truth_sample,
+                                             downsample=downsample_batch,
+                                             ground_truth=ground_truth_batch,
+                                             val_downsample=downsample_batch,
+                                             val_ground_truth=ground_truth_batch,
                                              validate=validate)
 
             if epoch_i % self.steps_per_model_checkpoint == 0:
-                print('%d - Loss %.4f, PSNR: %.2f, Loops: %.2f, Percent Loops: %.4f' % (epoch_i,
+                print('%d - Loss %.4f, PSNR: %.2f' % (epoch_i,
                                                                                         self.loss_plot[-1],
-                                                                                        self.psnr_plot[-1],
-                                                                                        self.loops_plot[-1],
-                                                                                        self.percent_loops_plot[-1]))
+                                                                                        self.psnr_plot[-1]))
                 if validation_curves:
-                    print('\tTest Loss: %.4f, Test PSNR: %.2f, Test Percent Loops: %.4f' % (self.val_loss_plot[-1],
-                                                                                            self.val_psnr_plot[-1],
-                                                                                            self.val_percent_loops_plot[-1]))
+                    print('\tTest Loss: %.4f, Test PSNR: %.2f' % (self.val_loss_plot[-1],
+                                                                                            self.val_psnr_plot[-1]))
                 self.save_epoch_curves(epoch_i, validate=validate)
                 self.save_model(epoch_i)
         # Save the models
@@ -236,10 +241,7 @@ class EnhanceModel(Autoencoder):
             f.write(self.enhance_model.to_json())
 
     def save_model(self, epoch):
-        try:
-            os.mkdir(self.model_out)
-        except FileExistsError:
-            pass
+        os.makedirs(self.model_out, exist_ok=True)
         model_params = self.model_params_to_name()
         self.enhance_model.save_weights(self.model_out + self.model_name + model_params + '_%d_epochs.h5' % epoch)
         with open(self.model_out + self.model_name + model_params + '.json', 'w') as f:
@@ -310,8 +312,8 @@ class EnhanceModel(Autoencoder):
                                     val_downsample,
                                     val_ground_truth,
                                     validate=False):
-        public_low_depth = np.load('data/public_1.npy')
-        public_high_depth = np.load('data/public_2.npy')
+        public_low_depth = downsample
+        public_high_depth = ground_truth
         if self.normalize:
             downsample = normalize_matrix(downsample)
             val_downsample = normalize_matrix(val_downsample)
@@ -432,14 +434,14 @@ class EnhanceModel(Autoencoder):
         def total_loops(matrix):
             mask = (matrix >= cutoff)
             loops = tf.boolean_mask(K.ones_like(matrix), mask=mask)
-            return tf.count_nonzero(loops)
+            return tf.math.count_nonzero(loops)
 
         def total_overlap(a, b):
             mask_a = (a >= cutoff)
             mask_b = (b >= cutoff)
             mask = tf.logical_and(mask_a, mask_b)
             loops = tf.boolean_mask(K.ones_like(a), mask=mask)
-            return tf.count_nonzero(loops)
+            return tf.math.count_nonzero(loops)
         total = total_loops(ground_truth)
         overlap = total_overlap(enhanced, ground_truth)
         return 0 if total == 0 else overlap / total

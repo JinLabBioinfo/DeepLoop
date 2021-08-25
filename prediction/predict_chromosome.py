@@ -1,11 +1,16 @@
 import os
 import sys
+import argparse
 import pandas as pd
 import numpy as np
 import time
+from tqdm import tqdm
 from keras.models import model_from_json
 from scipy.sparse import csr_matrix, triu
-from utils.utils import anchor_to_locus, anchor_list_to_dict
+try:
+    from utils.utils import anchor_to_locus, anchor_list_to_dict
+except ModuleNotFoundError:
+    from utils import anchor_to_locus, anchor_list_to_dict
 
 
 def locus_to_anchor(anchor_list):
@@ -91,7 +96,7 @@ def predict_and_write(model,
                       step_size,
                       dummy=5,
                       keep_zeros=True,
-                      matrices_per_tile=4):
+                      matrices_per_tile=8):
     start_time = time.time()
     anchor_file = anchor_dir + chromosome + '.bed'
     anchor_list = pd.read_csv(anchor_file, sep='\t', names=['chr', 'start', 'end', 'anchor'])  # read anchor list file
@@ -120,11 +125,13 @@ def predict_and_write(model,
 
     anchor_step = matrices_per_tile * small_matrix_size
 
-    for i in range(0, len(anchor_list), anchor_step):
+    for i in tqdm(range(0, len(anchor_list), anchor_step)):
         anchors = anchor_list[i: i + anchor_step]
+        #print(anchors)
         anchor_dict = anchor_list_to_dict(anchors['anchor'].values)  # convert to anchor --> index dictionary
         chr_tile = chr_anchor_file[
             (chr_anchor_file['anchor1'].isin(anchors['anchor'])) & (chr_anchor_file['anchor2'].isin(anchors['anchor']))]
+        #print(chr_tile)
         rows = np.vectorize(anchor_to_locus(anchor_dict))(
             chr_tile['anchor1'].values)  # convert anchor names to row indices
         cols = np.vectorize(anchor_to_locus(anchor_dict))(
@@ -138,19 +145,19 @@ def predict_and_write(model,
                                                            small_matrix_size,
                                                            step_size,
                                                            keep_zeros=keep_zeros)
+        if len(sparse_denoised_tile.row) > 0:
+            anchor_name_list = anchors['anchor'].values.tolist()
 
-        anchor_name_list = anchors['anchor'].values.tolist()
+            anchor_1_list = np.vectorize(locus_to_anchor(anchor_name_list))(sparse_denoised_tile.row)
+            anchor_2_list = np.vectorize(locus_to_anchor(anchor_name_list))(sparse_denoised_tile.col)
 
-        anchor_1_list = np.vectorize(locus_to_anchor(anchor_name_list))(sparse_denoised_tile.row)
-        anchor_2_list = np.vectorize(locus_to_anchor(anchor_name_list))(sparse_denoised_tile.col)
+            anchor_to_anchor_dict = {'anchor1': anchor_1_list,
+                                     'anchor2': anchor_2_list,
+                                     'denoised': sparse_denoised_tile.data}
 
-        anchor_to_anchor_dict = {'anchor1': anchor_1_list,
-                                 'anchor2': anchor_2_list,
-                                 'denoised': sparse_denoised_tile.data}
-
-        tile_anchor_to_anchor = pd.DataFrame.from_dict(anchor_to_anchor_dict)
-        tile_anchor_to_anchor = tile_anchor_to_anchor.round({'denoised': 4})
-        denoised_anchor_to_anchor = pd.concat([denoised_anchor_to_anchor, tile_anchor_to_anchor])
+            tile_anchor_to_anchor = pd.DataFrame.from_dict(anchor_to_anchor_dict)
+            tile_anchor_to_anchor = tile_anchor_to_anchor.round({'denoised': 4})
+            denoised_anchor_to_anchor = pd.concat([denoised_anchor_to_anchor, tile_anchor_to_anchor])
 
     print('Denoised matrix in %d seconds' % (time.time() - start_time))
     start_time = time.time()
@@ -161,21 +168,36 @@ def predict_and_write(model,
 
 
 if __name__ == '__main__':
-    full_matrix_dir = sys.argv[1]
-    input_name = sys.argv[2]
-    json_file = sys.argv[3]
-    h5_file = sys.argv[4]
-    out_dir = sys.argv[5]
-    anchor_dir = sys.argv[6]
-    chromosome = sys.argv[7]
-    small_matrix_size = int(sys.argv[8])
-    step_size = int(sys.argv[9])
-    dummy = int(sys.argv[10])
-    keep_zeros = bool(sys.argv[11])
-    try:
-        os.mkdir(out_dir)
-    except Exception:
-        pass
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--full_matrix_dir', type=str)
+    parser.add_argument('--input_name', type=str)
+    parser.add_argument('--h5_file', type=str)
+    parser.add_argument('--json_file', type=str)
+    parser.add_argument('--out_dir', type=str)
+    parser.add_argument('--anchor_dir', type=str)
+    parser.add_argument('--chromosome', type=str)
+    parser.add_argument('--small_matrix_size', type=int, default=128)
+    parser.add_argument('--step_size', type=int, default=128)
+    parser.add_argument('--dummy', type=int, default=5)
+    parser.add_argument('--keep_zeros', action='store_true')
+    args = parser.parse_args()
+
+    full_matrix_dir = args.full_matrix_dir
+    input_name = args.input_name
+    h5_file = args.h5_file
+    if args.json_file is not None:
+        json_file = args.json_file
+    else:
+        json_file = args.h5_file.replace('h5', 'json')
+    out_dir = args.out_dir
+    anchor_dir = args.anchor_dir
+    chromosome = args.chromosome
+    small_matrix_size = args.small_matrix_size
+    step_size = args.step_size
+    dummy = args.dummy
+    keep_zeros = args.keep_zeros
+
+    os.makedirs(out_dir, exist_ok=True)
 
     with open(json_file, 'r') as f:
         model = model_from_json(f.read())  # load model
