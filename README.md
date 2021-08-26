@@ -43,7 +43,7 @@ See [Hi-C data preprocessing](https://github.com/shanshan950/Hi-C-data-preproces
 
 We highly recommend that users start from raw fastq data to ensure reproducibility.
 
-## Run DeepLoop
+## Run *DeepLoop*
 
 To run either a LoopDenoise or LoopEnhance model on a HiCorr corrected dataset, please refer to the [prediction walkthrough notebook](https://github.com/JinLabBioinfo/DeepLoop/blob/7c742f4bf6ab57e2204c9cc21ea5f87bc60f7475/examples/walkthrough_prediction.ipynb)
 
