@@ -44,7 +44,10 @@ See [Hi-C data preprocessing](https://github.com/shanshan950/Hi-C-data-preproces
 We highly recommend that users start from raw fastq data to ensure reproducibility.
 
 ## Run *DeepLoop*
-
+The format of DeepLoop input files is fragment/anchor based contact pairs from each chromosome:
+<table><tr><td>anchor_id_1</td> <td>anchor_id_2</td> <td>observed_reads_count</td> <td>expected_reads_from_HiCorr</td></tr>  </table>
+The output format is:
+<table><tr><td>anchor_id_1</td> <td>anchor_id_2</td> <td>LoopStrength_from_DeepLoop</td></tr>  </table>
 To run either a LoopDenoise or LoopEnhance model on a HiCorr corrected dataset, please refer to the [prediction walkthrough notebook](https://github.com/JinLabBioinfo/DeepLoop/blob/7c742f4bf6ab57e2204c9cc21ea5f87bc60f7475/examples/walkthrough_prediction.ipynb)
 
 ## Visualization with [Cooler](https://github.com/open2c/cooler) and [HiGlass](http://higlass.io/)
@@ -54,3 +57,6 @@ For visualization and analysis of DeepLoop output, we recommend converting to co
 ## Training new models
 
 If you wish to train a new model, ensure you have access to a machine with a GPU and refer to the [training walkthrough notebook](https://github.com/JinLabBioinfo/DeepLoop/blob/7c742f4bf6ab57e2204c9cc21ea5f87bc60f7475/examples/walkthrough_training.ipynb)
+
+## About Loopcalling
+DeepLoop is able to generate clean loop signals, we We will merge DeepLoop output from all the chromosomes and rank anchor pairs by "LoopStrength"(3rd column). Take confident loops from top ranked contact pairs.
