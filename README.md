@@ -35,10 +35,10 @@ This will also install optional visualization and analysis tools we use such as:
 
 If you plan on training your own model you will want to use a GPU enabled version of TensorFlow to intractably long training times.  We used `tensorflow-gpu==2.3.1` but any TF2 version should work.  For prediction GPU is not necessary but it will be faster than using CPU.
 
-# DeepLoop Usage
+# *DeepLoop* Usage
 
 ## Hi-C data Preprocessing
-DeepLoop are trained with HiCorr output, we have several tutorials to show how to process raw Hi-C data through HiCorr and DeepLoop. 
+*DeepLoop* are trained with *HiCorr* output, we have several tutorials to show how to process raw Hi-C data through *HiCorr* and *DeepLoop*. 
 See [Hi-C data preprocessing](https://github.com/shanshan950/Hi-C-data-preprocess)
 
 We highly recommend that users start from raw fastq data to ensure reproducibility.
