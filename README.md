@@ -1,18 +1,18 @@
 # DeepLoop
-The conceptual innovation of DeepLoop is to handle systematic biases and random noises separately: we used HiCorr(https://github.com/JinLabBioinfo/HiCorr) to improve the rigor of bias correction, and then applied deep-learning techniques for noise reduction and loop signal enhancement. DeepLoop significantly improves the sensitivity, robustness, and quantitation of Hi-C loop analyses, and can be used to reanalyze most published low-depth Hi-C datasets. Remarkably, DeepLoop can identify chromatin loops with Hi-C data from a few dozen single cells
-
-## LoopDenoise removes noise from HiCorr bias-corrected HiC data
+The conceptual innovation of DeepLoop is to handle systematic biases and random noises separately: we used [HiCorr](https://github.com/JinLabBioinfo/HiCorr) to improve the rigor of bias correction, and then applied deep-learning techniques for noise reduction and loop signal enhancement. DeepLoop significantly improves the sensitivity, robustness, and quantitation of Hi-C loop analyses, and can be used to reanalyze most published low-depth Hi-C datasets. 
+* Zhang,S. and Plummer,D. et al._ Robust mapping of DNA loops at kilobase resolution from low depth allele-resolved or single-cell Hi-C data (under review)
+## *LoopDenoise* removes noise from *HiCorr* bias-corrected Hi-C data
 <p align="center">
-<img align="center" src="https://github.com/JinLabBioinfo/DeepLoop/blob/master/images/LoopDenoise.PNG" width="600" height="400">
+<img align="center" src="https://github.com/JinLabBioinfo/DeepLoop/blob/master/images/LoopDenoise.PNG" width="900" height="400">
 </p>
 
 
-## LoopEnhance reveals chromatin loops from a few dozens of single cell HiC data
+## *LoopEnhance* reveals chromatin loops from single cell HiC data and allele-resolved Hi-C data
 <p align="center">
-<img align="center" src="https://github.com/JinLabBioinfo/DeepLoop/blob/master/images/LoopEnhance_examples_sc.PNG" width="600" height="250">
+<img align="center" src="https://github.com/JinLabBioinfo/DeepLoop/blob/master/images/LoopEnhance.PNG" width="1000" height="250">
 </p>
 
-# DeepLoop installation
+# *DeepLoop* installation
 
 DeepLoop was developed and tested using Python 3.5 and following Python packages:
 
@@ -37,12 +37,13 @@ If you plan on training your own model you will want to use a GPU enabled versio
 
 # DeepLoop Usage
 
-## Preprocessing
-A detail example for Hi-C data prepossessing (downloading, mapping, filtering and HiCorr bias correction) is in https://github.com/JinLabBioinfo/DeepLoop/blob/master/preprocessing/
+## Hi-C data Preprocessing
+DeepLoop are trained with HiCorr output, we have several tutorials to show how to process raw Hi-C data through HiCorr and DeepLoop. 
+See [Hi-C data preprocessing](https://github.com/shanshan950/Hi-C-data-preprocess)
 
-We recommend that users start from raw fastq data to ensure reproducibility.
+We highly recommend that users start from raw fastq data to ensure reproducibility.
 
-## Denoise/Enhance new Hi-C data
+## Run DeepLoop
 
 To run either a LoopDenoise or LoopEnhance model on a HiCorr corrected dataset, please refer to the [prediction walkthrough notebook](https://github.com/JinLabBioinfo/DeepLoop/blob/7c742f4bf6ab57e2204c9cc21ea5f87bc60f7475/examples/walkthrough_prediction.ipynb)
 
