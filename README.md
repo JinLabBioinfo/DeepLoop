@@ -3,7 +3,7 @@ The conceptual innovation of DeepLoop is to handle systematic biases and random 
 
 ## LoopDenoise removes noise from HiCorr bias-corrected HiC data
 <p align="center">
-<img align="center" src="https://github.com/JinLabBioinfo/DeepLoop/blob/master/images/LoopDenoise.example.PNG" width="600" height="400">
+<img align="center" src="https://github.com/JinLabBioinfo/DeepLoop/blob/master/images/LoopDenoise.PNG" width="600" height="400">
 </p>
 
 
