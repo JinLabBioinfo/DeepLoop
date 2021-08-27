@@ -35,6 +35,15 @@ This will also install optional visualization and analysis tools we use such as:
 
 If you plan on training your own model you will want to use a GPU enabled version of TensorFlow to intractably long training times.  We used `tensorflow-gpu==2.3.1` but any TF2 version should work.  For prediction GPU is not necessary but it will be faster than using CPU.
 
+# Download *DeepLoop* trained models
+>We have trained a series of LoopEnhance models(depth from 100k to 250M mid-range contacts)trained with human cortex Hi-C data
+>We also trained LoopDenoise model with human cortex and H9 cell line data separately. 
+You can download them by:
+```
+cd DeepLoop
+wget --no-check-certificate https://hiview.case.edu/ssz20/tmp.HiCorr.ref/DeepLoop_models.tar.gz
+tar -xvf DeepLoop_models.tar.gz
+```
 # *DeepLoop* Usage
 
 ## Hi-C data Preprocessing
