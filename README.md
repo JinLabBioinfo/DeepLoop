@@ -40,8 +40,7 @@ If you plan on training your own model you will want to use a GPU enabled versio
 >We also trained LoopDenoise model with human cortex and H9 cell line data separately. 
 You can download them by:
 ```
-cd DeepLoop/prediction/
-ln -s ../utils/utils.py
+cd DeepLoop/
 wget --no-check-certificate https://hiview.case.edu/ssz20/tmp.HiCorr.ref/DeepLoop_models.tar.gz
 tar -xvf DeepLoop_models.tar.gz
 ```
