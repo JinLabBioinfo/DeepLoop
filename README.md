@@ -3,7 +3,7 @@ The conceptual innovation of DeepLoop is to handle systematic biases and random 
 * Zhang,S. and Plummer,D. et al._ Robust mapping of DNA loops at kilobase resolution from low depth allele-resolved or single-cell Hi-C data (under review)
 ## *LoopDenoise* removes noise from *HiCorr* bias-corrected Hi-C data
 <p align="center">
-<img align="center" src="https://github.com/JinLabBioinfo/DeepLoop/blob/master/images/LoopDenoise.PNG" width="900" height="400">
+<img align="center" src="https://github.com/JinLabBioinfo/DeepLoop/blob/master/images/LoopDenoise.PNG" width="900" height="380">
 </p>
 
 
@@ -35,15 +35,17 @@ This will also install optional visualization and analysis tools we use such as:
 
 If you plan on training your own model you will want to use a GPU enabled version of TensorFlow to intractably long training times.  We used `tensorflow-gpu==2.3.1` but any TF2 version should work.  For prediction GPU is not necessary but it will be faster than using CPU.
 
-# Download *DeepLoop* trained models
+# Download *DeepLoop* trained models and reference files
 >We have trained a series of LoopEnhance models(depth from 100k to 250M mid-range contacts)trained with human cortex Hi-C data
 >We also trained LoopDenoise model with human cortex and H9 cell line data separately. 
 You can download them by:
 ```
-cd DeepLoop
+cd DeepLoop/prediction/
+ln -s ../utils/utils.py
 wget --no-check-certificate https://hiview.case.edu/ssz20/tmp.HiCorr.ref/DeepLoop_models.tar.gz
 tar -xvf DeepLoop_models.tar.gz
 ```
+> After decompressing, the "DeepLoop_models/" dircetory includes "CPGZ_trained", "H9_trained" models and "ref" which includes anchor bed files for HiCorr output.
 # *DeepLoop* Usage
 
 ## Hi-C data Preprocessing
