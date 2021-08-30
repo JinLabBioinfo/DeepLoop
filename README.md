@@ -48,10 +48,10 @@ tar -xvf DeepLoop_models.tar.gz
 # *DeepLoop* Usage
 
 ## Hi-C data Preprocessing
-*DeepLoop* are trained with *HiCorr* output, we have several tutorials to show how to process raw Hi-C data through *HiCorr* and *DeepLoop*. 
+*DeepLoop* are trained with *HiCorr* output, we have several tutorials to show how to process raw Hi-C data through *HiCorr* and *DeepLoop* staring from fastq-files, bam files or "validPairs" from [HiC-Pro](https://github.com/nservant/HiC-Pro). 
 See [Hi-C data preprocessing](https://github.com/shanshan950/Hi-C-data-preprocess)
 
-We highly recommend that users start from raw fastq data to ensure reproducibility.
+HiCorr is a fragment-based bias correction method. We highly recommend that users run HiCorr with fragment pairs instead of bin pairs, unless the experiment data achieves nucleosome resolution, e.g. MicroC. 
 
 ## Run *DeepLoop*
 The format of DeepLoop input files is fragment/anchor based contact pairs from each chromosome:
