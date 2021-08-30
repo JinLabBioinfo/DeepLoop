@@ -48,10 +48,10 @@ tar -xvf DeepLoop_models.tar.gz
 # *DeepLoop* Usage
 
 ## Hi-C data Preprocessing
-*DeepLoop* are trained with *HiCorr* output, we have several tutorials to show how to process raw Hi-C data through *HiCorr* and *DeepLoop* staring from fastq-files, bam files or "validPairs" from [HiC-Pro](https://github.com/nservant/HiC-Pro). 
+- *DeepLoop* are trained with *HiCorr* output, we have several tutorials to show how to process raw Hi-C data through *HiCorr* and *DeepLoop* staring from fastq-files, bam files or "validPairs" from [HiC-Pro](https://github.com/nservant/HiC-Pro). 
 See [Hi-C data preprocessing](https://github.com/shanshan950/Hi-C-data-preprocess)
 
-HiCorr is a fragment-based bias correction method. We highly recommend that users run HiCorr with fragment pairs instead of bin pairs, unless the experiment data achieves nucleosome resolution, e.g. MicroC. 
+- HiCorr is a fragment-based bias correction method. We highly recommend that users run HiCorr with fragment pairs instead of bin pairs, unless the experiment data achieves nucleosome resolution, e.g. MicroC. 
 
 ## Run *DeepLoop*
 The format of DeepLoop input files is fragment/anchor based contact pairs from each chromosome:
@@ -60,9 +60,21 @@ The output format is:
 <table><tr><td>anchor_id_1</td> <td>anchor_id_2</td> <td>LoopStrength_from_DeepLoop</td></tr>  </table>
 To run either a LoopDenoise or LoopEnhance model on a HiCorr corrected dataset, please refer to the [prediction walkthrough notebook](https://github.com/JinLabBioinfo/DeepLoop/blob/7c742f4bf6ab57e2204c9cc21ea5f87bc60f7475/examples/walkthrough_prediction.ipynb)
 
-## Visualization with [Cooler](https://github.com/open2c/cooler) and [HiGlass](http://higlass.io/)
+## Heatmap Visualization from DeepLoop output
+```
+mkdir Plots
+chr=
+start=
+end=
+DeepLoopOutPath=
+$lib/generate.matrix.by.DeepLoop.pl $DeepLoopPath/DeepLoop_models/ref/${genome}_${enzyme}_anchor_bed/${chr}.bed $DeepLoopOutPath/$chr.denoised.anchor.to.anchor $chr $start $end ./Plots/${chr}_${start}_${end}
+$lib/plot.heatmap.r Plots/{$chr}_${start}_${end}.DeepLoop.matrix
 
-For visualization and analysis of DeepLoop output, we recommend converting to cooler file as outlined in the [cooler walkthrough notebook](https://github.com/JinLabBioinfo/DeepLoop/blob/7c742f4bf6ab57e2204c9cc21ea5f87bc60f7475/examples/walkthrough_cooler.ipynb)
+```
+## Compatible with [HiC-Pro](https://github.com/nservant/HiC-Pro), [Cooler](https://github.com/open2c/cooler) and [HiGlass](http://higlass.io/)
+- As we mentioned in section Hi-C data Preprocessing, HiCorr can take [HiC-Pro](https://github.com/nservant/HiC-Pro) output. 
+- The output of HiCorr and Deeploop can be converted to [cooler](https://github.com/open2c/cooler) format, see [cooler walkthrough notebook](https://github.com/JinLabBioinfo/DeepLoop/blob/7c742f4bf6ab57e2204c9cc21ea5f87bc60f7475/examples/walkthrough_cooler.ipynb)
+- You can further take converted cooler file to visulaize by  [HiGlass](http://higlass.io/)
 
 ## Training new models
 
