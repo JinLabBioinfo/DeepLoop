@@ -5,12 +5,21 @@ import pandas as pd
 import numpy as np
 import time
 from tqdm import tqdm
-from keras.models import model_from_json
+from tensorflow.keras.models import model_from_json
 from scipy.sparse import csr_matrix, triu
-try:
-    from utils.utils import anchor_to_locus, anchor_list_to_dict
-except ModuleNotFoundError:
-    from utils import anchor_to_locus, anchor_list_to_dict
+
+
+def anchor_list_to_dict(anchors):
+    anchor_dict = {}
+    for i, anchor in enumerate(anchors):
+        anchor_dict[anchor] = i
+    return anchor_dict
+
+
+def anchor_to_locus(anchor_dict):
+    def f(anchor):
+        return anchor_dict[anchor]
+    return f
 
 
 def locus_to_anchor(anchor_list):
@@ -39,6 +48,7 @@ def sparse_prediction_from_file(model,
                                 anchor_list,
                                 small_matrix_size=128,
                                 step_size=64,
+                                max_dist=384,
                                 keep_zeros=True):
     input_matrix_size = len(anchor_list)
     denoised_matrix = np.zeros_like(matrix.A)  # matrix to store denoised values
@@ -48,7 +58,7 @@ def sparse_prediction_from_file(model,
 
     for i in range(0, input_matrix_size, step_size):
         for j in range(0, input_matrix_size, step_size):
-            if abs(i - j) > 384:  # max distance from diagonal with actual values
+            if abs(i - j) > max_dist:  # max distance from diagonal with actual values
                 continue
             rows = slice(i, i + small_matrix_size)
             cols = slice(j, j + small_matrix_size)
@@ -95,29 +105,23 @@ def predict_and_write(model,
                       small_matrix_size,
                       step_size,
                       dummy=5,
+                      max_dist=384,
+                      val_cols=['obs', 'exp'],
                       keep_zeros=True,
                       matrices_per_tile=8):
     start_time = time.time()
-    anchor_file = anchor_dir + chromosome + '.bed'
-    anchor_list = pd.read_csv(anchor_file, sep='\t', names=['chr', 'start', 'end', 'anchor'])  # read anchor list file
-    print('Opened anchor .bed file in %d seconds' % (time.time() - start_time))
+    anchor_file = os.path.join(anchor_dir, chromosome + '.bed')
+    anchor_list = pd.read_csv(anchor_file, sep='\t', usecols=[0, 1, 2, 3], names=['chr', 'start', 'end', 'anchor'])  # read anchor list file
     start_time = time.time()
-    try:  # first try reading anchor to anchor file as <a1> <a2> <obs> <exp>
-        chr_anchor_file = pd.read_csv(
-            full_matrix_dir + input_name,
-            delimiter='\t',
-            names=['anchor1', 'anchor2', 'obs', 'exp'],
-            usecols=['anchor1', 'anchor2', 'obs', 'exp'])  # read chromosome anchor to anchor file
+    chr_anchor_file = pd.read_csv(
+        os.path.join(full_matrix_dir, input_name),
+        delimiter='\t',
+        names=['anchor1', 'anchor2'] + val_cols,
+        usecols=['anchor1', 'anchor2'] + val_cols)  # read chromosome anchor to anchor file
+    if 'obs' in val_cols and 'exp' in val_cols:
         chr_anchor_file['ratio'] = (chr_anchor_file['obs'] + dummy) / (
                     chr_anchor_file['exp'] + dummy)  # compute matrix ratio value
-    except:  # otherwise read anchor to anchor file as <a1> <a2> <ratio>
-        chr_anchor_file = pd.read_csv(
-            full_matrix_dir + input_name,
-            delimiter='\t',
-            names=['anchor1', 'anchor2', 'ratio'],
-            usecols=['anchor1', 'anchor2', 'ratio'])
-
-    print('Opened anchor to anchor file in %d seconds' % (time.time() - start_time))
+    assert 'ratio' not in val_cols, "Must provide either ratio column or obs and exp columns to compute ratio"
 
     denoised_anchor_to_anchor = pd.DataFrame()
 
@@ -131,7 +135,6 @@ def predict_and_write(model,
         anchor_dict = anchor_list_to_dict(anchors['anchor'].values)  # convert to anchor --> index dictionary
         chr_tile = chr_anchor_file[
             (chr_anchor_file['anchor1'].isin(anchors['anchor'])) & (chr_anchor_file['anchor2'].isin(anchors['anchor']))]
-        #print(chr_tile)
         rows = np.vectorize(anchor_to_locus(anchor_dict))(
             chr_tile['anchor1'].values)  # convert anchor names to row indices
         cols = np.vectorize(anchor_to_locus(anchor_dict))(
@@ -144,6 +147,7 @@ def predict_and_write(model,
                                                            anchors,
                                                            small_matrix_size,
                                                            step_size,
+                                                           max_dist,
                                                            keep_zeros=keep_zeros)
         if len(sparse_denoised_tile.row) > 0:
             anchor_name_list = anchors['anchor'].values.tolist()
@@ -162,24 +166,25 @@ def predict_and_write(model,
     print('Denoised matrix in %d seconds' % (time.time() - start_time))
     start_time = time.time()
 
-    denoised_anchor_to_anchor.to_csv(out_dir + chromosome + '.denoised.anchor.to.anchor', sep='\t', index=False,
+    denoised_anchor_to_anchor.to_csv(os.path.join(out_dir, chromosome + '.denoised.anchor.to.anchor'), sep='\t', index=False,
                                      header=False)
-    print('Wrote anchor to anchor file in %d seconds' % (time.time() - start_time))
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--full_matrix_dir', type=str)
-    parser.add_argument('--input_name', type=str)
-    parser.add_argument('--h5_file', type=str)
-    parser.add_argument('--json_file', type=str)
-    parser.add_argument('--out_dir', type=str)
-    parser.add_argument('--anchor_dir', type=str)
-    parser.add_argument('--chromosome', type=str)
-    parser.add_argument('--small_matrix_size', type=int, default=128)
-    parser.add_argument('--step_size', type=int, default=128)
-    parser.add_argument('--dummy', type=int, default=5)
-    parser.add_argument('--keep_zeros', action='store_true')
+    parser.add_argument('--full_matrix_dir', type=str, help='directory containing chromosome interaction files to be used as input')
+    parser.add_argument('--input_name', type=str, help='name of file in full_matrix_dir that we want to feed into model')
+    parser.add_argument('--h5_file', type=str, help='path to model weights .h5 file')
+    parser.add_argument('--json_file', type=str, help='path to model architecture .json file (by default it is assumed to be the same as the weights file)')
+    parser.add_argument('--out_dir', type=str, help='directory where the output interaction file will be stored')
+    parser.add_argument('--anchor_dir', type=str, help='directory containing anchor .bed reference files')
+    parser.add_argument('--chromosome', type=str, help='chromosome string (e.g chr1, chr20, chrX)')
+    parser.add_argument('--small_matrix_size', type=int, default=128, help='size of input tiles (symmetric)')
+    parser.add_argument('--step_size', type=int, default=128, help='step size when tiling matrix (overlapping values will be averaged if different)')
+    parser.add_argument('--max_dist', type=int, default=384, help='maximum distance from diagonal (in pixels) where we consider interactions (default to ~2Mb)')
+    parser.add_argument('--dummy', type=int, default=5, help='dummy value to compute ratio (obs + dummy) / (exp + dummy)')
+    parser.add_argument('--val_cols','--list', nargs='+', help='names of value columns in interaction files (not including a1, a2)', default=['obs', 'exp'])
+    parser.add_argument('--keep_zeros', action='store_true', help='if provided, the output file will contain all pixels in every tile, even if no value is present')
     args = parser.parse_args()
 
     full_matrix_dir = args.full_matrix_dir
@@ -195,6 +200,8 @@ if __name__ == '__main__':
     small_matrix_size = args.small_matrix_size
     step_size = args.step_size
     dummy = args.dummy
+    max_dist = args.max_dist
+    val_cols = args.val_cols
     keep_zeros = args.keep_zeros
 
     os.makedirs(out_dir, exist_ok=True)
@@ -203,4 +210,4 @@ if __name__ == '__main__':
         model = model_from_json(f.read())  # load model
     model.load_weights(h5_file)  # load model weights
     predict_and_write(model, full_matrix_dir, input_name, out_dir, anchor_dir, chromosome, small_matrix_size, step_size,
-                      dummy, keep_zeros)
+                      dummy, max_dist, val_cols, keep_zeros)
