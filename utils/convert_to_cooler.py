@@ -160,6 +160,49 @@ def print_update(s, verbose=False):
     if verbose:
         print(s)
 
+
+def check_anchors(anchor_dir):
+    chr_anchor_offsets = {}
+    chr_true_starts = {}
+    chr_lengths = {}
+    if os.path.isdir(anchor_dir):
+        chrom_files = os.listdir(anchor_dir)
+    else:
+        chrom_files = [anchor_dir]
+    chr_len_offset = 0
+    anchor_to_int = lambda s: int(s.split('_')[-1]) - 1  # convert anchor names to integer IDs
+    bins = {}
+    for file in tqdm(sorted_nicely(chrom_files)):
+        if 'chr' not in file:
+            continue
+        chr_name = get_chromosome_from_filename(file)
+        bin_file = os.path.join(anchor_dir, chr_name + '.bed')
+        chr_bins = pd.read_csv(bin_file, sep='\t', names=['chrom', 'start', 'end', 'anchor'])
+        chr_bins['anchor'] = chr_bins['anchor'].apply(anchor_to_int)
+        chr_anchor_offsets[chr_name] = chr_bins['anchor'].min()
+        chr_lengths[chr_name] = chr_bins['anchor'].max() - chr_bins['anchor'].min() + 1
+        bins[chr_name] = chr_bins
+    start_anchor = 1
+    for chr_name in sorted_nicely(bins.keys()):
+        chr_true_starts[chr_name] = start_anchor
+        start_anchor += chr_lengths[chr_name]
+    return chr_anchor_offsets, chr_true_starts, chr_lengths
+
+
+def reindex_bins_and_pixels(pixels, bins, chr_name, chr_anchor_offsets, chr_true_starts, chr_lengths):
+    anchor_dict = anchor_list_to_dict(bins['anchor'].values)  # convert to anchor --> index dictionary
+    rows = np.vectorize(anchor_to_locus(anchor_dict))(
+        pixels['a1'].values)  # convert anchor names to row indices
+    cols = np.vectorize(anchor_to_locus(anchor_dict))(
+        pixels['a2'].values)  # convert anchor names to column indices
+    bins['anchor'] = pd.Series(np.arange(chr_true_starts[chr_name], chr_true_starts[chr_name] + chr_lengths[chr_name] + 1))
+    pixels.loc[:, 'a1'] = rows + chr_true_starts[chr_name]
+    pixels.loc[:, 'a2'] = cols + chr_true_starts[chr_name]
+    pixels[['a1', 'a2']] = pixels[['a1', 'a2']].astype(int)
+    return pixels, bins
+
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--anchor_dir', type=str, help='directory containing chromosome .bed files')
@@ -201,13 +244,16 @@ if __name__ == '__main__':
     genome_pixels = pd.DataFrame()
     print(out_file)
 
+    chr_anchor_offsets, chr_true_starts, chr_lengths = check_anchors(anchor_dir)
+    reindex_needed = False
+
     if os.path.isdir(loop_dir):
         chrom_files = os.listdir(loop_dir)
     else:
         chrom_files = [loop_dir]
 
     chr_len_offset = 0
-    for file in tqdm(sorted(chrom_files)):
+    for file in tqdm(sorted_nicely(chrom_files)):
         if 'chr' not in file:
             continue
         chr_name = get_chromosome_from_filename(file)
@@ -218,12 +264,33 @@ if __name__ == '__main__':
         bins = pd.read_csv(bin_file, sep='\t', names=['chrom', 'start', 'end', 'anchor'])
         anchor_to_int = lambda s: int(s.split('_')[-1]) - 1  # convert anchor names to integer IDs
         bins['anchor'] = bins['anchor'].apply(anchor_to_int)
+        if bins['anchor'].min() != chr_true_starts[chr_name]:
+            reindex_needed = True
         bins['weight'] = 1
         bins['start'] = bins['start'] - 1
         bins['end'] = bins['end'] - 1
-        chr_offset = bins['anchor'].min()  # number of anchors preceding this chromosome
+        chr_offset = chr_true_starts[chr_name]  # number of anchors preceding this chromosome
         chr_len_offset = bins['end'].max()
         chr_bin_offset = int(bins['start'].min() / bin_size)  # number of bins
+        print_update('Loading pixels...', verbose=verbose)
+        pixels = open_anchor_to_anchor(os.path.join(loop_dir, file), col_names, cooler_col=cooler_col)
+        pixels = pixels[pixels[cooler_col] >= min_val]
+        print_update('Mapping anchor/bin IDs to ints...', verbose=verbose)
+        try:
+            pixels['a1'] = pixels['a1'].apply(anchor_to_int)
+            pixels['a2'] = pixels['a2'].apply(anchor_to_int)
+        except Exception as e:
+            print(e)
+            print(pixels)
+        pixels = pixels[pixels['a1'] <= pixels['a2']]
+        if reindex_needed:
+            print_update('Pixels not indexed properly for cooler, reindexing...', verbose=verbose)
+            pixels, bins = reindex_bins_and_pixels(pixels, bins, chr_name, chr_anchor_offsets, chr_true_starts, chr_lengths)
+            chr_len_offset = bins['end'].max()
+            chr_bin_offset = int(bins['start'].min() / bin_size)  # number of bins
+
+        pixels['chr'] = chr_name
+
         if single_chrom:
             bins['anchor'] = bins['anchor'] - chr_offset
         if bin_size != -1:
@@ -246,18 +313,7 @@ if __name__ == '__main__':
         else:
             genome_bins = pd.concat([genome_bins, bins])
             genome_anchors = pd.concat([genome_anchors, bins])
-        print_update('Loading pixels...', verbose=verbose)
-        pixels = open_anchor_to_anchor(os.path.join(loop_dir, file), col_names, cooler_col=cooler_col)
-        pixels = pixels[pixels[cooler_col] >= min_val]
-        print_update('Mapping anchor/bin IDs to ints...', verbose=verbose)
-        try:
-            pixels['a1'] = pixels['a1'].apply(anchor_to_int)
-            pixels['a2'] = pixels['a2'].apply(anchor_to_int)
-        except Exception as e:
-            print(e)
-            print(pixels)
-        pixels = pixels[pixels['a1'] <= pixels['a2']]
-        pixels['chr'] = chr_name
+
         if single_chrom:
             pixels['a1'] = pixels['a1'] - chr_offset
             pixels['a2'] = pixels['a2'] - chr_offset
@@ -289,8 +345,8 @@ if __name__ == '__main__':
                 tmp_new_pixels = [pd.DataFrame()]
                 bin1_mask = pixels['bin1_overlap'] == bin1_overlap
                 bin2_mask = pixels['bin2_overlap'] == bin2_overlap
-                a1_overlap = min(bin1_overlap, 2)  # clip overlap to reasonable range
-                a2_overlap = min(bin2_overlap, 2)
+                a1_overlap = min(bin1_overlap, 3)  # clip overlap to reasonable range
+                a2_overlap = min(bin2_overlap, 3)
                 #if a1_overlap * a2_overlap < 64:
                 for a1_offset in range(-int(a1_overlap), int(a1_overlap) + 1):
                     if abs(a1_offset) > 0:
