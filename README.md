@@ -6,11 +6,14 @@ The conceptual innovation of DeepLoop is to handle systematic biases and random 
 <img align="center" src="https://github.com/JinLabBioinfo/DeepLoop/blob/master/images/LoopDenoise.PNG" width="900" height="380">
 </p>
 
-
 ## *LoopEnhance* reveals chromatin loops from single cell HiC data and allele-resolved Hi-C data
 <p align="center">
 <img align="center" src="https://github.com/JinLabBioinfo/DeepLoop/blob/master/images/LoopEnhance.PNG" width="1000" height="250">
 </p>
+
+
+## 40 Processed Hi-C datasets by *DeepLoop* can be visualized in [website](https://hiview.case.edu/test/DeepLoop/)
+
 
 # *DeepLoop* installation
 
