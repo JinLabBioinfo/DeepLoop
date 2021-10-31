@@ -66,15 +66,26 @@ To run either a LoopDenoise or LoopEnhance model on a HiCorr corrected dataset, 
 ### Test dataset for running HiCorr and DeepLoop
 This test dataset is H9 Hi-C fragment loop(restriction enzyme: HindIII; genome build:hg19) from GSE130711.  <br/>
 - **Step1:** Download the test data(fragment loop) and run HiCorr <br/>
-  **Note:** Step1 takes hours, skip Step1 if you have your "HiCorr_output" already.<br/>
 ``` 
-wget wget http://hiview.case.edu/ssz20/tmp.HiCorr.ref/HiCorr_test_data/frag_loop.H9.cis.gz # cis frag_loop
-wget wget http://hiview.case.edu/ssz20/tmp.HiCorr.ref/HiCorr_test_data/frag_loop.H9.trans.gz # trans frag_loop
+wget http://hiview.case.edu/ssz20/tmp.HiCorr.ref/HiCorr_test_data/frag_loop.H9.cis.gz # cis frag_loop
+wget http://hiview.case.edu/ssz20/tmp.HiCorr.ref/HiCorr_test_data/frag_loop.H9.trans.gz # trans frag_loop
 gunzip frag_loop.H9.cis.gz
 gunzip frag_loop.H9.trans.gz
 ./HiCorr HindIII frag_loop.H9.cis frag_loop.H9.trans H9 hg19 # It take a few hours to run
 ```
 After HiCorr, you will see a directory "HiCorr_output/", it contains "anchor_2_anchor.loop.chr.p_val" for each chromosome. This directory will be the input for DeepLoop.  <br/>
+
+- **Note:** Step1 takes hours, skip Step1 if you have your "HiCorr_output" already.<br/>
+- **OR** Download example data to repeat the following process and plot <br/>
+```
+wget http://hiview.case.edu/ssz20/tmp.HiCorr.ref/HiCorr_test_data/HiCorr_output.tar.gz 
+tar -xvf HiCorr_output.tar.gz
+ls
+ls HiCorr_output
+```
+You will see "anchor_2_anchor.loop.chr11" and "anchor_2_anchor.loop.chr11.p_val" in "HiCorr_output/" <br/>
+ <br/>
+
 - **Step2:** Run DeepLoop (LoopDenoise) based on directory "HiCorr_output/"
 ```
 HiCorr_path=<Path to HiCorr_output>
@@ -113,6 +124,12 @@ https://github.com/JinLabBioinfo/DeepLoop/blob/master/images/test.plot.png
 Check the "test.plot.png", "raw", "HiCorr", and "DeepLoop"  <br/> 
 ![sample heatmaps](https://github.com/JinLabBioinfo/DeepLoop/blob/master/images/test.plot.png)
 
+**Note:**
+- Change DeepLoop model according to the data depth you have
+- To run DeepLoop for whole genome, repeat the process above for each chromosome.
+- The heatmap color scale can be adjusted in the script "lib/plot.multiple.r"
+
+
 ## Heatmap Visualization for HiCorr and DeepLoop output
 The heatmap visualization in Step3 above can be also done with script "plot.sh" in "lib/" <br/>
 It takes eight parameters:<br/>
@@ -120,7 +137,7 @@ It takes eight parameters:<br/>
 - DeepLoopRefbed: Path to anchor bed, e.g. "DeepLoop/DeepLoop_models/ref/hg19_HindIII_anchor_bed/" in the test exmaples
 - HiCorr_path: Path for HiCorr_output/. 
 - DeepLoop_outPath: Path for DeepLoop output; where you store "chr*.denoised.anchor.to.anchor"
-- chr=: Genomic region chromosome
+- chr: Genomic region chromosome
 - start: Genomic region start loc
 - end: Genomic region end loc, remember input a region less than 2Mb
 - outPath: Path to store the heatmap png files.
