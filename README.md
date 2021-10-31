@@ -3,12 +3,12 @@ The conceptual innovation of DeepLoop is to handle systematic biases and random 
 * Zhang,S. and Plummer,D. et al._ Robust mapping of DNA loops at kilobase resolution from low depth allele-resolved or single-cell Hi-C data (under review)
 ## *LoopDenoise* removes noise from *HiCorr* bias-corrected Hi-C data
 <p align="center">
-<img align="center" src="https://github.com/JinLabBioinfo/DeepLoop/blob/master/images/LoopDenoise.PNG" width="1000" height="380">
+<img align="center" src="https://github.com/JinLabBioinfo/DeepLoop/blob/master/images/LoopDenoise.PNG" width="1200" height="380">
 </p>
 
 ## *LoopEnhance* reveals chromatin loops from single cell HiC data and allele-resolved Hi-C data
 <p align="center">
-<img align="center" src="https://github.com/JinLabBioinfo/DeepLoop/blob/master/images/LoopEnhance.PNG" width="1200" height="250">
+<img align="center" src="https://github.com/JinLabBioinfo/DeepLoop/blob/master/images/LoopEnhance.PNG" width="1500" height="250">
 </p>
 
 
