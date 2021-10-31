@@ -65,7 +65,8 @@ To run either a LoopDenoise or LoopEnhance model on a HiCorr corrected dataset, 
 
 ### Test dataset for running HiCorr and DeepLoop
 This test dataset is H9 Hi-C fragment loop(restriction enzyme: HindIII; genome build:hg19) from GSE130711.  <br/>
-- Step1: Download the test data(fragment loop) and run HiCorr <br/>
+- **Step1:** Download the test data(fragment loop) and run HiCorr <br/>
+  **Note:** Step1 takes hours, skip Step1 if you have your "HiCorr_output" already.<br/>
 ``` 
 wget wget http://hiview.case.edu/ssz20/tmp.HiCorr.ref/HiCorr_test_data/frag_loop.H9.cis.gz # cis frag_loop
 wget wget http://hiview.case.edu/ssz20/tmp.HiCorr.ref/HiCorr_test_data/frag_loop.H9.trans.gz # trans frag_loop
@@ -74,7 +75,7 @@ gunzip frag_loop.H9.trans.gz
 ./HiCorr HindIII frag_loop.H9.cis frag_loop.H9.trans H9 hg19 # It take a few hours to run
 ```
 After HiCorr, you will see a directory "HiCorr_output/", it contains "anchor_2_anchor.loop.chr.p_val" for each chromosome. This directory will be the input for DeepLoop.  <br/>
-- Step2: Run DeepLoop (LoopDenoise) based on directory "HiCorr_output/"
+- **Step2:** Run DeepLoop (LoopDenoise) based on directory "HiCorr_output/"
 ```
 HiCorr_path=<Path to HiCorr_output>
 DeepLoop_outPath=
@@ -94,12 +95,11 @@ Check output in $DeepLoop_outPath
 ```
 ls $DeepLoop_outPath
 head $DeepLoop_outPath/$chr.denoised.anchor.to.anchor
-
 ```
 You will see "chr22.denoised.anchor.to.anchor"
 <table><tr><td>anchor_id_1</td> <td>anchor_id_2</td> <td>LoopStrength_from_DeepLoop</td></tr>  </table>
 
-- Step3: Visulaize contact heatmaps from raw, HiCorr, and DeepLoop given a genomic location chr start end
+- **Step3:** Visulaize contact heatmaps from raw, HiCorr, and DeepLoop given a genomic location chr start end
 ```
 chr=chr11
 start=130000000
@@ -113,16 +113,27 @@ https://github.com/JinLabBioinfo/DeepLoop/blob/master/images/test.plot.png
 Check the "test.plot.png", "raw", "HiCorr", and "DeepLoop"  <br/> 
 ![sample heatmaps](https://github.com/JinLabBioinfo/DeepLoop/blob/master/images/test.plot.png)
 
-## Heatmap Visualization from DeepLoop output
+## Heatmap Visualization for HiCorr and DeepLoop output
+The heatmap visualization in Step3 above can be also done with script "plot.sh" in "lib/" <br/>
+It takes eight parameters:<br/>
+- DeepLoopInstallPath: Path to "DeepLoop/"
+- DeepLoopRefbed: Path to anchor bed, e.g. "DeepLoop/DeepLoop_models/ref/hg19_HindIII_anchor_bed/" in the test exmaples
+- HiCorr_path: Path for HiCorr_output/. 
+- DeepLoop_outPath: Path for DeepLoop output; where you store "chr*.denoised.anchor.to.anchor"
+- chr=: Genomic region chromosome
+- start: Genomic region start loc
+- end: Genomic region end loc, remember input a region less than 2Mb
+- outPath: Path to store the heatmap png files.
+
+If DeepLoop is installed in home directory "$myhome", outPath is current directory("./") you plan to run the script
 ```
-mkdir Plots
-chr=
-start=
-end=
-DeepLoopOutPath=
-$lib/generate.matrix.by.DeepLoop.pl $DeepLoopPath/DeepLoop_models/ref/${genome}_${enzyme}_anchor_bed/${chr}.bed $DeepLoopOutPath/$chr.denoised.anchor.to.anchor $chr $start $end ./Plots/${chr}_${start}_${end}
-$lib/plot.heatmap.r Plots/{$chr}_${start}_${end}.DeepLoop.matrix
+bash $myhome/DeepLoop/lib/plot.sh $myhome \
+                                  $myhome/DeepLoop/DeepLoop_models/ref/hg19_HindIII_anchor_bed/ \
+                                  $HiCorr_path/ \
+                                  $DeepLoop_outPath/ \
+                                  chr11 130000000 130800000 ./ 
 ```
+The heatmap png file named "chr11_130000000_130800000.plot.png" will be in the current directory.
 
 ## Compatible with [HiC-Pro](https://github.com/nservant/HiC-Pro), [Cooler](https://github.com/open2c/cooler) and [HiGlass](http://higlass.io/)
 - As we mentioned in section Hi-C data Preprocessing, HiCorr can take [HiC-Pro](https://github.com/nservant/HiC-Pro) output. 
