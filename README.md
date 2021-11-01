@@ -14,7 +14,7 @@ The conceptual innovation of DeepLoop is to handle systematic biases and random 
 
 ## 40 Processed Hi-C datasets by *DeepLoop* can be visualized in [website](https://hiview.case.edu/test/DeepLoop/)
 
-
+# *DeepLoop* require HiCorr, pleaase install [HiCorr](https://github.com/JinLabBioinfo/HiCorr) first 
 # *DeepLoop* installation
 
 DeepLoop was developed and tested using Python 3.5 and following Python packages:
