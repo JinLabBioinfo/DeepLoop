@@ -54,7 +54,7 @@ tar -xvf DeepLoop_models.tar.gz
 - *DeepLoop* are trained with *HiCorr* output, we have several tutorials to show how to process raw Hi-C data through *HiCorr* and *DeepLoop* staring from fastq-files, bam files or "validPairs" from [HiC-Pro](https://github.com/nservant/HiC-Pro). 
 See [Hi-C data preprocessing](https://github.com/shanshan950/Hi-C-data-preprocess)
 
-- HiCorr is a fragment-based bias correction method. We highly recommend that users run HiCorr with fragment pairs instead of bin pairs, unless the experiment data achieves nucleosome resolution, e.g. Micro-C. 
+- HiCorr is a fragment-based bias correction method. We highly recommend that users run HiCorr with fragment pairs instead of bin pairs
 
 ## Run *DeepLoop*
 The format of DeepLoop input files is fragment/anchor based contact pairs from each chromosome:
