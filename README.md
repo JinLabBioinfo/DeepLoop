@@ -16,7 +16,7 @@ The conceptual innovation of DeepLoop is to handle systematic biases and random 
 
 
 # *DeepLoop* installation
-## *DeepLoop* require HiCorr, pleaase install [HiCorr](https://github.com/JinLabBioinfo/HiCorr) first 
+## *DeepLoop* require HiCorr, please install [HiCorr](https://github.com/JinLabBioinfo/HiCorr) first 
 DeepLoop was developed and tested using Python 3.5 and following Python packages:
 
 * `numpy`
