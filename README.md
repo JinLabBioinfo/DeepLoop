@@ -63,20 +63,8 @@ The output format is:
 <table><tr><td>anchor_id_1</td> <td>anchor_id_2</td> <td>LoopStrength_from_DeepLoop</td></tr>  </table>
 To run either a LoopDenoise or LoopEnhance model on a HiCorr corrected dataset, please refer to the [prediction walkthrough notebook](https://github.com/JinLabBioinfo/DeepLoop/blob/7c742f4bf6ab57e2204c9cc21ea5f87bc60f7475/examples/walkthrough_prediction.ipynb)
 
-### Test dataset for running HiCorr and DeepLoop
-This test dataset is H9 Hi-C fragment loop(restriction enzyme: HindIII; genome build:hg19) from GSE130711.  <br/>
-- **Step1:** Download the test data(fragment loop) and run HiCorr <br/>
-``` 
-wget http://hiview.case.edu/ssz20/tmp.HiCorr.ref/HiCorr_test_data/frag_loop.H9.cis.gz # cis frag_loop
-wget http://hiview.case.edu/ssz20/tmp.HiCorr.ref/HiCorr_test_data/frag_loop.H9.trans.gz # trans frag_loop
-gunzip frag_loop.H9.cis.gz
-gunzip frag_loop.H9.trans.gz
-./HiCorr HindIII frag_loop.H9.cis frag_loop.H9.trans H9 hg19 # It take a few hours to run
-```
-After HiCorr, you will see a directory "HiCorr_output/", it contains "anchor_2_anchor.loop.chr.p_val" for each chromosome. This directory will be the input for DeepLoop.  <br/>
-
-- **Note:** Step1 takes hours, skip Step1 if you have your "HiCorr_output" already.<br/>
-- **OR** Download example data to repeat the following process and plot <br/>
+### Test dataset for running DeepLoop
+- **Step1:** Download example data to repeat the following process and plot <br/>
 ```
 wget http://hiview.case.edu/ssz20/tmp.HiCorr.ref/HiCorr_test_data/HiCorr_output.tar.gz 
 tar -xvf HiCorr_output.tar.gz
