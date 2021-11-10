@@ -12,7 +12,7 @@ The conceptual innovation of DeepLoop is to handle systematic biases and random 
 </p>
 
 
-## 40 Processed Hi-C datasets by *DeepLoop* can be visualized in [website](https://hiview.case.edu/test/DeepLoop/)
+## 40 Processed Hi-C datasets by *DeepLoop* can be visualized in [website](https://hiview.case.edu/public/DeepLoop/)
 
 
 # *DeepLoop* installation
