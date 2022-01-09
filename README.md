@@ -13,7 +13,8 @@ The conceptual innovation of DeepLoop is to handle systematic biases and random 
 
 
 ## 40 Processed Hi-C datasets by *DeepLoop* can be visualized in [website](https://hiview.case.edu/public/DeepLoop/)
-
+## Top300K loop pixels for datasets analyzed in this project can be downloaded by:
+`wget --no-check-certificate https://hiview.case.edu/ssz20/tmp.HiCorr.ref/DeepLoop_top300K.tar.gz`
 
 # *DeepLoop* installation
 ## *DeepLoop* require HiCorr, please install [HiCorr](https://github.com/JinLabBioinfo/HiCorr) first 
