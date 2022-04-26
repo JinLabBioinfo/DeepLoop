@@ -1,4 +1,4 @@
-### The 4C-seq was analysed using [pipe4C].(https://github.com/deLaatLab/pipe4C)
+### The 4C-seq was analysed using [pipe4C](https://github.com/deLaatLab/pipe4C)
 ### Install pipe4C, download fastq and prepare the VP.info.
 ### Run pipe4C
 ```
