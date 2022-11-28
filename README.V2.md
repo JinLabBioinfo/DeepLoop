@@ -5,8 +5,9 @@ Citation: Zhang, S., Plummer, D., Lu, L. et al. DeepLoop robustly maps chromatin
 
 DeepLoop contains two parts: <br/>
 - *LoopDenoise* removes noise from *HiCorr* bias-corrected Hi-C data (>300M cis-2Mb contacts)
-- *LoopEnhance* reveals chromatin loops from lower depth Hi-C data (<300M cis-2Mb contacts, e.g. single cell HiC data and allele-resolved Hi-C data)
+- *LoopEnhance* reveals chromatin loops from lower depth Hi-C data (<300M cis-2Mb contacts, e.g. single cell HiC data and allele-resolved Hi-C data) <br/>
 
+ **DeepLoop require HiCorr, please install [HiCorr](https://github.com/JinLabBioinfo/HiCorr) first**
 
 ## Processed data availability 
 - 40 Processed Hi-C datasets by *DeepLoop* can be visualized in [website](https://hiview.case.edu/public/DeepLoop/)
@@ -41,12 +42,16 @@ tar -xvf DeepLoop_models.tar.gz
 After decompressing, the "DeepLoop_models/" dircetory includes "CPGZ_trained", "H9_trained" models and "ref" which includes anchor bed files for HiCorr output.
 
 ## Run *DeepLoop*
-There are three steps 
-- Mapping and filterations: fastq to fragment pairs
-- Bias correction by HiCorr: fragment pairs to ~5kb anchor/bin pairs
-- Denoise or Enhance by DeepLoop: ~5kb anchor/bin pairs
-- 
-## *DeepLoop* require HiCorr, please install [HiCorr](https://github.com/JinLabBioinfo/HiCorr) first
+
+**There are three steps to process Hi-C data from fastq files:**
+- **Step1:** Mapping and filterations: fastq to fragment pairs
+- **Step2:** Bias correction by HiCorr: fragment pairs to ~5kb anchor/bin pairs
+- **Step3:** Denoise or Enhance by DeepLoop: ~5kb anchor/bin pairs
+ 
+ For step1 and step2, examples and scripts are available in [HiCorr](https://github.com/JinLabBioinfo/HiCorr). <br/>
+ 
+ 
+
 # *DeepLoop* Usage
 
 ## Hi-C data Preprocessing
