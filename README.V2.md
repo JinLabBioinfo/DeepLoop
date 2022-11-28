@@ -48,8 +48,20 @@ After decompressing, the "DeepLoop_models/" dircetory includes "CPGZ_trained", "
 - **Step2:** Bias correction by HiCorr: fragment pairs to ~5kb anchor/bin pairs
 - **Step3:** Denoise or Enhance by DeepLoop: ~5kb anchor/bin pairs
  
- For step1 and step2, examples and scripts are available in [HiCorr](https://github.com/JinLabBioinfo/HiCorr). <br/>
- 
+ For **step1** and **step2**, examples and scripts are available in [HiCorr](https://github.com/JinLabBioinfo/HiCorr). <br/>
+ Make sure you have HiCorr output before you run DeepLoop. <br/>
+ One example HiCorr output data is provided: <br>
+ ```
+wget http://hiview.case.edu/ssz20/tmp.HiCorr.ref/HiCorr_test_data/HiCorr_output.tar.gz 
+tar -xvf HiCorr_output.tar.gz
+ls
+ls HiCorr_output
+```
+You will see "anchor_2_anchor.loop.chr11" and "anchor_2_anchor.loop.chr11.p_val" in "HiCorr_output/", the difference between two files is that one has p-values, the other does not. There's no p-value column for beta version of HiCorr on micro-C and Arima HiC data. <br/>
+The data format is:
+<table><tr><td>anchor_id_1</td> <td>anchor_id_2</td> <td>observed_reads_count</td> <td>expected_reads_from_HiCorr</td></tr>  </table>
+
+<table><tr><td>anchor_id_1</td> <td>anchor_id_2</td> <td>LoopStrength_from_DeepLoop</td></tr>  </table>
  
 
 # *DeepLoop* Usage
@@ -61,21 +73,13 @@ See [Hi-C data preprocessing](https://github.com/shanshan950/Hi-C-data-preproces
 - HiCorr is a fragment-based bias correction method. We highly recommend that users run HiCorr with fragment pairs instead of bin pairs
 
 The format of DeepLoop input files is fragment/anchor based contact pairs from each chromosome:
-<table><tr><td>anchor_id_1</td> <td>anchor_id_2</td> <td>observed_reads_count</td> <td>expected_reads_from_HiCorr</td></tr>  </table>
-The output format is:
-<table><tr><td>anchor_id_1</td> <td>anchor_id_2</td> <td>LoopStrength_from_DeepLoop</td></tr>  </table>
+
+
 To run either a LoopDenoise or LoopEnhance model on a HiCorr corrected dataset, please refer to the [prediction walkthrough notebook](https://github.com/JinLabBioinfo/DeepLoop/blob/7c742f4bf6ab57e2204c9cc21ea5f87bc60f7475/examples/walkthrough_prediction.ipynb)
 
 ### Test dataset for running DeepLoop
 - **Step1:** Download example data to repeat the following process and plot <br/>
-```
-wget http://hiview.case.edu/ssz20/tmp.HiCorr.ref/HiCorr_test_data/HiCorr_output.tar.gz 
-tar -xvf HiCorr_output.tar.gz
-ls
-ls HiCorr_output
-```
-You will see "anchor_2_anchor.loop.chr11" and "anchor_2_anchor.loop.chr11.p_val" in "HiCorr_output/" <br/>
- <br/>
+
 
 - **Step2:** Run DeepLoop (LoopDenoise) based on directory "HiCorr_output/"
 ```
