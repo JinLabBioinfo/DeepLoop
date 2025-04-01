@@ -36,7 +36,8 @@ If you plan on training your own model you will want to use a GPU enabled versio
 ## Download *DeepLoop* trained models and reference files
 ```
 cd DeepLoop/
-wget --no-check-certificate https://hiview.case.edu/ssz20/tmp.HiCorr.ref/DeepLoop_models.tar.gz
+wget --no-check-certificate https://hiview10.gene.cwru.edu/public/DeepLoop_ref/DeepLoop_models.tar.gz
+# old path: https://hiview.case.edu/ssz20/tmp.HiCorr.ref/DeepLoop_models.tar.gz
 tar -xvf DeepLoop_models.tar.gz
 ```
 After decompressing, the "DeepLoop_models/" dircetory includes "CPGZ_trained", "H9_trained" models and "ref" which includes anchor bed files for HiCorr output.
