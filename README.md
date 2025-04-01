@@ -13,7 +13,7 @@ DeepLoop contains two parts: <br/>
 - 40 Processed Hi-C datasets by *DeepLoop* can be visualized in [website](https://hiview.case.edu/public/DeepLoop/)
 - Top300K loop pixels for datasets analyzed in this project can be downloaded by: <br/>
 `wget --no-check-certificate https://hiview10.gene.cwru.edu/public/DeepLoop_ref/DeepLoop_top300K.tar.gz` <br/>
-(old path: https://hiview.case.edu/ssz20/tmp.HiCorr.ref/DeepLoop_top300K.tar.gz)`
+`(old path: https://hiview.case.edu/ssz20/tmp.HiCorr.ref/DeepLoop_top300K.tar.gz)`
 
 ## Installation
 DeepLoop was developed and tested using Python 3.5 and following Python packages:<br/>
@@ -53,7 +53,8 @@ After decompressing, the "DeepLoop_models/" dircetory includes "CPGZ_trained", "
  For **step1** and **step2**, examples and scripts are available in [HiCorr](https://github.com/JinLabBioinfo/HiCorr). <br/>
 - **Make sure you have HiCorr output before you run DeepLoop. One example HiCorr output data is provided:** <br>
  ```
-wget http://hiview.case.edu/ssz20/tmp.HiCorr.ref/HiCorr_test_data/HiCorr_output.tar.gz 
+wget  https://hiview10.gene.cwru.edu/public/DeepLoop_ref/HiCorr_test_data/HiCorr_output.tar.gz
+# old path: http://hiview.case.edu/ssz20/tmp.HiCorr.ref/HiCorr_test_data/HiCorr_output.tar.gz
 tar -xvf HiCorr_output.tar.gz
 ls
 ls HiCorr_output
