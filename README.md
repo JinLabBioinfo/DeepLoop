@@ -12,7 +12,8 @@ DeepLoop contains two parts: <br/>
 ## Processed data availability 
 - 40 Processed Hi-C datasets by *DeepLoop* can be visualized in [website](https://hiview.case.edu/public/DeepLoop/)
 - Top300K loop pixels for datasets analyzed in this project can be downloaded by: <br/>
-`wget --no-check-certificate https://hiview.case.edu/ssz20/tmp.HiCorr.ref/DeepLoop_top300K.tar.gz`
+`wget --no-check-certificate https://hiview10.gene.cwru.edu/public/DeepLoop_ref/DeepLoop_top300K.tar.gz
+(old path: https://hiview.case.edu/ssz20/tmp.HiCorr.ref/DeepLoop_top300K.tar.gz)`
 
 ## Installation
 DeepLoop was developed and tested using Python 3.5 and following Python packages:<br/>
